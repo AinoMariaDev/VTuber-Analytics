@@ -380,6 +380,34 @@ def search_listeners(query: str, limit: int = 100) -> list[dict[str, Any]]:
                 days_absent,
                 item["active_months"] or 0,
             )
+
+            if participation_rate >= 0.5:
+                item["listener_type"] = "超常連"
+            elif participation_rate >= 0.25:
+                item["listener_type"] = "常連"
+            elif participation_rate >= 0.1:
+                item["listener_type"] = "準常連"
+            else:
+                item["listener_type"] = "スポット参加"
+
+            if item["first_seen_date"] and latest_date:
+                first_days = (
+                    datetime.strptime(latest_date, "%Y-%m-%d")
+                    - datetime.strptime(item["first_seen_date"], "%Y-%m-%d")
+                ).days
+            else:
+                first_days = None
+
+            if first_days is not None and first_days <= 30:
+                item["status"] = "新規"
+            elif days_absent is not None and days_absent >= 60:
+                item["status"] = "休眠候補"
+            elif days_absent is not None and days_absent <= 14:
+                item["status"] = "継続中"
+            else:
+                item["status"] = "低頻度"
+
+            item["days_absent"] = days_absent
             result.append(item)
 
     return result
@@ -589,7 +617,7 @@ def main() -> None:
         raise SystemExit(f"index.html not found: {INDEX_PATH}")
 
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("VTuber Analytics Web App v0.5")
+    print("VTuber Analytics Web App v0.6.1")
     print(f"Open: http://{HOST}:{PORT}")
     print("Press Ctrl+C to stop.")
 

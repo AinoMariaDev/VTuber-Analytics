@@ -22,6 +22,23 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 .status{display:inline-block;border-radius:15px;padding:5px 10px;font-size:12px;font-weight:bold}
 .status-new{background:#e5f6ea;color:#2e7d32}.status-return{background:#fff0d9;color:#a15c00}.status-active{background:#e8edff;color:#3451b2}.status-dormant{background:#ffe4e4;color:#a12a2a}.status-low{background:#eee;color:#555}
 .score{font-size:34px;font-weight:bold;color:#9d365a}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.filter-btn{border:1px solid var(--line);background:white;border-radius:18px;padding:7px 12px;cursor:pointer}
+.filter-btn.active{background:var(--navy);color:white;border-color:var(--navy)}
+.participation-wrap{min-width:150px}
+.participation-bar{height:10px;background:#e8edf5;border-radius:8px;overflow:hidden;margin-bottom:5px}
+.participation-fill{height:100%;background:var(--blue)}
+.score-pill{display:inline-block;min-width:42px;text-align:center;padding:5px 9px;border-radius:14px;font-weight:bold}
+.score-high{background:#dff2e4;color:#216b37}
+.score-core{background:#e8edff;color:#3451b2}
+.score-mid{background:#fff1c7;color:#8a6000}
+.score-low{background:#ffe4e4;color:#a12a2a}
+.sortable{cursor:pointer;user-select:none}
+.sortable:hover{background:#dce4f1}
+.rank-super{background:#e5f6ea;color:#2e7d32}
+.rank-regular{background:#e8edff;color:#3451b2}
+.rank-semi{background:#fff1c7;color:#8a6000}
+.rank-spot{background:#eee;color:#555}
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:100;padding:24px}.modal.open{display:flex;align-items:center;justify-content:center}.modal-content{background:white;width:min(1000px,100%);max-height:90vh;overflow:auto;border-radius:16px;padding:22px}.close{float:right;border:0;background:#eee;border-radius:50%;width:34px;height:34px;cursor:pointer}
 .chart{width:100%;height:260px;background:#fafbfc;border:1px solid var(--line);border-radius:12px}.chart text{font-size:11px;fill:#667085}.chart .axis{stroke:#cfd6df;stroke-width:1}.chart .line-a{fill:none;stroke:#5470c6;stroke-width:3}.chart .line-b{fill:none;stroke:#e97c9d;stroke-width:3}
 .type{display:inline-block;padding:6px 10px;border-radius:16px;background:#ffeaf1;color:#9d365a;font-weight:bold}
@@ -31,7 +48,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 <body>
 <header>
 <h1>愛野まりあ YouTube Analytics</h1>
-<p>コメント参加者ベースのローカル分析アプリ v0.5</p>
+<p>コメント参加者ベースのローカル分析アプリ v0.6.1</p>
 <nav>
 <button data-tab="dashboard" class="active">ダッシュボード</button>
 <button data-tab="listeners">リスナー検索</button>
@@ -55,7 +72,19 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 </section>
 
 <section id="listeners" class="section">
-<div class="card"><h2>リスナー検索</h2><input id="listenerSearch" class="search" placeholder="表示名またはチャンネルIDを入力"><p class="muted">ファンスコアもここで確認できます。</p></div>
+<div class="card">
+<h2>リスナー検索</h2>
+<input id="listenerSearch" class="search" placeholder="表示名またはチャンネルIDを入力">
+<div class="filters" id="listenerFilters">
+<button class="filter-btn active" data-filter="all">すべて</button>
+<button class="filter-btn" data-filter="超常連">超常連</button>
+<button class="filter-btn" data-filter="常連">常連</button>
+<button class="filter-btn" data-filter="準常連">準常連</button>
+<button class="filter-btn" data-filter="新規">新規</button>
+<button class="filter-btn" data-filter="休眠候補">休眠候補</button>
+</div>
+<p class="muted">見出しをクリックすると並び替えできます。</p>
+</div>
 <div class="card"><div id="listenerResults"></div></div>
 </section>
 
@@ -97,7 +126,68 @@ async function loadDashboard(){
 }
 async function loadCategories(){const rows=await api("/api/categories");document.getElementById("categoryTable").innerHTML=table(["企画","配信数","平均参加人数","平均コメント","最高参加人数","最高コメント"],rows.map(r=>`<tr><td><span class="badge">${esc(r.category)}</span></td><td>${r.stream_count}</td><td>${r.avg_participants}</td><td>${r.avg_comments}</td><td>${r.max_participants}</td><td>${r.max_comments}</td></tr>`))}
 async function loadStreams(){const rows=await api("/api/streams?limit=100");document.getElementById("streamTable").innerHTML=table(["日付","曜日","企画","タイトル","参加人数","コメント"],rows.map(r=>`<tr><td>${esc(r.stream_date)}</td><td>${esc(r.weekday)}</td><td><span class="badge">${esc(r.category)}</span></td><td><button class="link-button" onclick="openStream('${encodeURIComponent(r.video_id)}')">${esc(r.title)}</button></td><td>${r.participants}</td><td>${r.comments}</td></tr>`))}
-let timer;async function searchListeners(){clearTimeout(timer);timer=setTimeout(async()=>{const q=document.getElementById("listenerSearch").value.trim(),rows=await api(`/api/listeners?q=${encodeURIComponent(q)}`);document.getElementById("listenerResults").innerHTML=table(["表示名","参加配信","参加率","総コメント","ファンスコア","初参加","最終参加"],rows.map(r=>`<tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td><td>${r.stream_count}</td><td>${(r.participation_rate*100).toFixed(1)}%</td><td>${r.comment_count}</td><td>${r.fan_score}</td><td>${esc(r.first_seen_date)}</td><td>${esc(r.last_seen_date)}</td></tr>`))},250)}
+let timer;
+let listenerRows=[];
+let listenerFilter="all";
+let listenerSort={key:"stream_count",direction:"desc"};
+
+function scoreClass(score){
+  if(score>=85)return "score-high";
+  if(score>=70)return "score-core";
+  if(score>=50)return "score-mid";
+  return "score-low";
+}
+function rankClass(rank){
+  if(rank==="超常連")return "rank-super";
+  if(rank==="常連")return "rank-regular";
+  if(rank==="準常連")return "rank-semi";
+  return "rank-spot";
+}
+function renderListeners(){
+  let rows=[...listenerRows];
+  if(listenerFilter!=="all"){
+    rows=rows.filter(r=>r.listener_type===listenerFilter||r.status===listenerFilter);
+  }
+  const {key,direction}=listenerSort;
+  rows.sort((a,b)=>{
+    let av=a[key]??"", bv=b[key]??"";
+    if(typeof av==="string")return direction==="asc"?av.localeCompare(bv,"ja"):bv.localeCompare(av,"ja");
+    return direction==="asc"?av-bv:bv-av;
+  });
+
+  const arrow=k=>listenerSort.key===k?(listenerSort.direction==="asc"?" ▲":" ▼"):"";
+  const headers=[
+    ["display_name","表示名"],["listener_type","ランク"],["participation_rate","参加率"],
+    ["comment_count","総コメント"],["fan_score","スコア"],["last_seen_date","最終参加"]
+  ];
+  document.getElementById("listenerResults").innerHTML=`<div class="table-wrap"><table>
+    <thead><tr>${headers.map(([k,l])=>`<th class="sortable" onclick="sortListeners('${k}')">${l}${arrow(k)}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button><br><span class="status ${statusClass(r.status)}">${esc(r.status)}</span></td>
+      <td><span class="badge ${rankClass(r.listener_type)}">${esc(r.listener_type)}</span></td>
+      <td><div class="participation-wrap"><div class="participation-bar"><div class="participation-fill" style="width:${Math.min(r.participation_rate*100,100)}%"></div></div>${(r.participation_rate*100).toFixed(1)}%</div></td>
+      <td>${r.comment_count.toLocaleString()}</td>
+      <td><span class="score-pill ${scoreClass(r.fan_score)}">${r.fan_score}</span></td>
+      <td>${esc(r.last_seen_date)}<br><span class="muted">${r.days_absent??"-"}日前</span></td>
+    </tr>`).join("")}</tbody>
+  </table></div>`;
+}
+function sortListeners(key){
+  if(listenerSort.key===key)listenerSort.direction=listenerSort.direction==="asc"?"desc":"asc";
+  else{
+    listenerSort.key=key;
+    listenerSort.direction=["display_name","listener_type","last_seen_date"].includes(key)?"asc":"desc";
+  }
+  renderListeners();
+}
+async function searchListeners(){
+  clearTimeout(timer);
+  timer=setTimeout(async()=>{
+    const q=document.getElementById("listenerSearch").value.trim();
+    listenerRows=await api(`/api/listeners?q=${encodeURIComponent(q)}`);
+    renderListeners();
+  },250);
+}
 async function openListener(idEnc){
   const d=await api(`/api/listener/${idEnc}`),p=d.profile;
   const monthly=[...d.monthly];
@@ -134,7 +224,13 @@ async function openStream(idEnc){
 }
 function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams()}));
-document.getElementById("listenerSearch").addEventListener("input",searchListeners);document.getElementById("detailModal").addEventListener("click",e=>{if(e.target.id==="detailModal")closeModal()});
+document.getElementById("listenerSearch").addEventListener("input",searchListeners);
+document.querySelectorAll("#listenerFilters .filter-btn").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll("#listenerFilters .filter-btn").forEach(x=>x.classList.remove("active"));
+  btn.classList.add("active");
+  listenerFilter=btn.dataset.filter;
+  renderListeners();
+}));document.getElementById("detailModal").addEventListener("click",e=>{if(e.target.id==="detailModal")closeModal()});
 loadDashboard();
 </script>
 </body>
