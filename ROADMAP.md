@@ -1,24 +1,24 @@
-# ROADMAP
-
-## v0.6
-- Listener co-attendance network
-- Return tendency analysis
-- Stream comparison
+# Roadmap
 
 ## v0.7
-- Start-time analysis
-- Duration analysis
-- Better category rules
+- Sortable listener tables
+- Better category classification
+- Listener status filters
+- Stream comparison view
 
 ## v0.8
-- One-click import and analysis
-- Configuration screen
-- Generalization for other VTubers
+- Listener co-attendance analysis
+- Retention analysis
+- Community health indicators
 
 ## v0.9
-- Exportable HTML report
+- One-click update
+- Configuration screen
 - Backup and restore
-- Error log viewer
+- Installer prototype
 
 ## v1.0
-- Public release candidate
+- Public beta release
+- First-run setup
+- Portable package
+- User documentation

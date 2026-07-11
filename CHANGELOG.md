@@ -1,27 +1,24 @@
-# CHANGELOG
+# Changelog
 
-## v0.5
-- Added listener lifecycle classification
-- Added fan score
-- Added monthly participation timeline
-- Added new / returning / active / dormant status
-- Improved listener detail view
+## [0.6.0] - 2026-07-12
+- Added public-ready README
+- Added MIT License
+- Added privacy-focused `.gitignore`
+- Added security and contribution guides
+- Standardized branding as **VTuber Analytics**
+- Standardized credit as **Powered by Aino Maria**
 
-## v0.4
-- Added stream detail view
-- Added recent stream charts
-- Added listener participation rate
+## [0.5.0]
+- Added fan score and listener lifecycle classification
 
-## v0.3
-- Added local web application
-- Added listener search
-- Added stream and category browsing
+## [0.4.0]
+- Added stream details and charts
 
-## v0.2
+## [0.3.0]
+- Added local Web application
+
+## [0.2.0]
 - Added category and weekday analysis
-- Added HTML dashboard
 
-## v0.1
-- Added SQLite database
-- Added incremental import
-- Added CSV reports
+## [0.1.0]
+- Added SQLite database and reports

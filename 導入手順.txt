@@ -1,0 +1,13 @@
+﻿VTuber Analytics v0.6 導入手順
+
+1. ZIPを解凍します。
+2. 中身をGitHub Desktopで管理しているプロジェクトフォルダへコピーします。
+3. 同名ファイルは上書きします。
+4. GitHub Desktopへ戻ります。
+5. data、reports、DB、JSON、CSVがChangesに表示されていないことを確認します。
+6. Summary:
+   Prepare v0.6 project foundation
+7. Description:
+   Add README, license, privacy rules, roadmap, and project metadata.
+8. Commit to main
+9. Push origin
