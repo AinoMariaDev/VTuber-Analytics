@@ -61,7 +61,20 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 .mini-fill-a{height:100%;background:#5470c6}
 .mini-fill-b{height:100%;background:#e97c9d}
 @media(max-width:1050px){.dashboard-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:700px){.dashboard-grid{grid-template-columns:1fr 1fr}}
+
+.report-hero{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;margin-bottom:18px}
+.grade-box{height:130px;border-radius:18px;background:var(--navy);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.grade-box strong{font-size:64px;line-height:1}
+.grade-box span{opacity:.8}
+.report-section{border-radius:12px;padding:15px 17px;margin-bottom:14px}
+.report-good{background:#eaf6ed;border-left:5px solid #4c956c}
+.report-caution{background:#fff5e5;border-left:5px solid #e6a23c}
+.report-action{background:#eef2ff;border-left:5px solid #5470c6}
+.comparison{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.compare-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:white}
+.compare-card strong{font-size:24px;display:block;margin-top:5px}
+@media(max-width:700px){.dashboard-grid{grid-template-columns:1fr 1fr}.report-hero{grid-template-columns:1fr}.comparison{grid-template-columns:1fr}}
+
 @media(max-width:900px){.grid,.two{grid-template-columns:1fr}.bar-row{grid-template-columns:100px 1fr 60px}}
 
 </style>
@@ -69,7 +82,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 <body>
 <header>
 <h1>愛野まりあ YouTube Analytics</h1>
-<p>コメント参加者ベースのローカル分析アプリ v0.6.2</p>
+<p>コメント参加者ベースのローカル分析アプリ v0.7.0</p>
 <nav>
 <button data-tab="dashboard" class="active">ダッシュボード</button>
 <button data-tab="listeners">リスナー検索</button>
@@ -356,10 +369,80 @@ async function openListener(idEnc){
 }
 async function openStream(idEnc){
   const d=await api(`/api/stream/${idEnc}`),s=d.stream;
-  document.getElementById("detailBody").innerHTML=`<h2>${esc(s.title)}</h2><p><span class="badge">${esc(s.category)}</span> ${esc(s.stream_date)} ${esc(s.weekday)}曜日</p>
-  <div class="grid"><div class="card"><div class="muted">参加人数</div><div class="kpi">${d.stats.participants}</div></div><div class="card"><div class="muted">コメント数</div><div class="kpi">${d.stats.comments}</div></div><div class="card"><div class="muted">新規人数</div><div class="kpi">${d.new_listeners.length}</div></div><div class="card"><div class="muted">動画ID</div><div style="font-weight:bold;margin-top:12px">${esc(s.video_id)}</div></div></div>
-  <div class="two"><div class="card"><h3>コメント数TOP10</h3>${table(["表示名","コメント"],d.top_commenters.map(r=>`<tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td><td>${r.comment_count}</td></tr>`))}</div>
-  <div class="card"><h3>その日が初参加の人</h3>${d.new_listeners.length?table(["表示名"],d.new_listeners.map(r=>`<tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td></tr>`)):"<p>該当なし</p>"}</div></div>`;
+  const prev=d.previous_stream;
+  const category=d.category_average||{};
+  const participantDiff=prev?d.stats.participants-prev.participants:null;
+  const commentDiff=prev?d.stats.comments-prev.comments:null;
+
+  const noteList=items=>`<ul>${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+
+  document.getElementById("detailBody").innerHTML=`
+  <div class="report-hero">
+    <div class="grade-box"><span>配信評価</span><strong>${esc(d.grade)}</strong></div>
+    <div>
+      <h2>${esc(s.title)}</h2>
+      <p><span class="badge">${esc(s.category)}</span> ${esc(s.stream_date)} ${esc(s.weekday)}曜日</p>
+      <p class="muted">コメント参加者ベースの配信カルテです。</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="muted">参加人数</div><div class="kpi">${d.stats.participants}</div></div>
+    <div class="card"><div class="muted">コメント数</div><div class="kpi">${d.stats.comments}</div></div>
+    <div class="card"><div class="muted">新規</div><div class="kpi">${d.new_listeners.length}</div></div>
+    <div class="card"><div class="muted">復帰</div><div class="kpi">${d.returning_listeners.length}</div></div>
+  </div>
+
+  <div class="comparison">
+    <div class="compare-card">
+      <span class="muted">前回比・参加人数</span>
+      <strong>${participantDiff===null?"-":participantDiff>0?`+${participantDiff}`:participantDiff}</strong>
+    </div>
+    <div class="compare-card">
+      <span class="muted">前回比・コメント</span>
+      <strong>${commentDiff===null?"-":commentDiff>0?`+${commentDiff}`:commentDiff}</strong>
+    </div>
+    <div class="compare-card">
+      <span class="muted">同企画の平均参加人数</span>
+      <strong>${category.avg_participants??"-"}</strong>
+    </div>
+  </div>
+
+  <div class="report-section report-good">
+    <h3>良かった点</h3>
+    ${noteList(d.notes.positives)}
+  </div>
+
+  <div class="report-section report-caution">
+    <h3>確認したい点</h3>
+    ${noteList(d.notes.cautions)}
+  </div>
+
+  <div class="report-section report-action">
+    <h3>次回の候補</h3>
+    ${noteList(d.notes.actions)}
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>コメント数TOP10</h3>
+      ${table(["表示名","コメント"],d.top_commenters.map(r=>`
+        <tr>
+          <td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td>
+          <td>${r.comment_count}</td>
+        </tr>`))}
+    </div>
+
+    <div class="card">
+      <h3>新規・復帰</h3>
+      <h4>その日が初参加</h4>
+      ${d.new_listeners.length?table(["表示名"],d.new_listeners.map(r=>`
+        <tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td></tr>`)):"<p>該当なし</p>"}
+      <h4>30日以上ぶりの復帰</h4>
+      ${d.returning_listeners.length?table(["表示名"],d.returning_listeners.map(r=>`
+        <tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td></tr>`)):"<p>該当なし</p>"}
+    </div>
+  </div>`;
   openModal();
 }
 function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}

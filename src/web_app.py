@@ -322,6 +322,92 @@ def get_recent_streams(limit: int = 30) -> list[dict[str, Any]]:
 
     return [dict(r) for r in rows]
 
+
+def grade_stream(
+    participants: int,
+    comments: int,
+    participant_avg: float,
+    comment_avg: float,
+) -> str:
+    participant_ratio = participants / participant_avg if participant_avg else 1
+    comment_ratio = comments / comment_avg if comment_avg else 1
+    score = participant_ratio * 0.55 + comment_ratio * 0.45
+
+    if score >= 1.35:
+        return "S"
+    if score >= 1.15:
+        return "A"
+    if score >= 0.95:
+        return "B"
+    if score >= 0.75:
+        return "C"
+    return "D"
+
+
+def build_stream_notes(
+    participants: int,
+    comments: int,
+    new_count: int,
+    returning_count: int,
+    previous_participants: int | None,
+    previous_comments: int | None,
+    category_avg_participants: float,
+    category_avg_comments: float,
+) -> dict[str, list[str]]:
+    positives: list[str] = []
+    cautions: list[str] = []
+    actions: list[str] = []
+
+    if previous_participants is not None:
+        diff = participants - previous_participants
+        if diff > 0:
+            positives.append(f"コメント参加人数が前回より{diff}人増えています。")
+        elif diff < 0:
+            cautions.append(f"コメント参加人数が前回より{abs(diff)}人少なめです。")
+
+    if previous_comments is not None:
+        diff = comments - previous_comments
+        if diff > 0:
+            positives.append(f"コメント数が前回より{diff}件増えています。")
+        elif diff < 0:
+            cautions.append(f"コメント数が前回より{abs(diff)}件少なめです。")
+
+    if new_count > 0:
+        positives.append(f"新規コメント参加者が{new_count}人いました。")
+        actions.append("新規参加者が次回も入りやすいよう、次回予告や案内導線を分かりやすくすると良さそうです。")
+
+    if returning_count > 0:
+        positives.append(f"30日以上ぶりに戻ったリスナーが{returning_count}人いました。")
+
+    if category_avg_participants:
+        ratio = participants / category_avg_participants
+        if ratio >= 1.15:
+            positives.append("同じ企画の平均よりコメント参加人数が好調です。")
+        elif ratio <= 0.85:
+            cautions.append("同じ企画の平均よりコメント参加人数が少なめです。")
+            actions.append("タイトル、告知時刻、開始時刻など、企画以外の条件も見直す候補です。")
+
+    if category_avg_comments:
+        ratio = comments / category_avg_comments
+        if ratio >= 1.15:
+            positives.append("同じ企画の平均よりコメントが活発です。")
+        elif ratio <= 0.85:
+            cautions.append("同じ企画の平均よりコメント数が少なめです。")
+
+    if not positives:
+        positives.append("大きな数値変動はありませんでした。")
+    if not cautions:
+        cautions.append("大きな注意点は確認されませんでした。")
+    if not actions:
+        actions.append("今回の条件を記録し、同じ企画の次回配信と比較してください。")
+
+    return {
+        "positives": positives,
+        "cautions": cautions,
+        "actions": actions,
+    }
+
+
 def get_stream(video_id: str) -> dict[str, Any] | None:
     owner_ph = placeholders(OWNER_CHANNEL_IDS)
     owner_params = tuple(OWNER_CHANNEL_IDS)
@@ -329,9 +415,12 @@ def get_stream(video_id: str) -> dict[str, Any] | None:
     with connect() as conn:
         stream = conn.execute(
             """
-            SELECT video_id, stream_date, title,
-                   COALESCE(category, 'その他') AS category,
-                   COALESCE(weekday, '') AS weekday
+            SELECT
+                video_id,
+                stream_date,
+                title,
+                COALESCE(category, 'その他') AS category,
+                COALESCE(weekday, '') AS weekday
             FROM streams
             WHERE video_id = ?
             """,
@@ -386,12 +475,144 @@ def get_stream(video_id: str) -> dict[str, Any] | None:
             (stream["stream_date"], *owner_params),
         ).fetchall()
 
+        returning_people = conn.execute(
+            f"""
+            SELECT DISTINCT
+                l.latest_display_name AS display_name,
+                l.channel_id
+            FROM messages current_m
+            JOIN listeners l ON l.channel_id = current_m.channel_id
+            WHERE current_m.video_id = ?
+              AND current_m.channel_id NOT IN ({owner_ph})
+              AND EXISTS (
+                  SELECT 1
+                  FROM messages old_m
+                  JOIN streams old_s ON old_s.video_id = old_m.video_id
+                  WHERE old_m.channel_id = current_m.channel_id
+                    AND old_s.stream_date < date(?, '-30 day')
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM messages recent_m
+                  JOIN streams recent_s ON recent_s.video_id = recent_m.video_id
+                  WHERE recent_m.channel_id = current_m.channel_id
+                    AND recent_s.stream_date >= date(?, '-30 day')
+                    AND recent_s.stream_date < ?
+              )
+            ORDER BY l.latest_display_name
+            """,
+            (
+                video_id,
+                *owner_params,
+                stream["stream_date"],
+                stream["stream_date"],
+                stream["stream_date"],
+            ),
+        ).fetchall()
+
+        previous = conn.execute(
+            f"""
+            SELECT
+                s.video_id,
+                s.stream_date,
+                s.title,
+                COUNT(DISTINCT CASE
+                    WHEN m.channel_id NOT IN ({owner_ph}) THEN m.channel_id
+                END) AS participants,
+                COUNT(CASE
+                    WHEN m.channel_id NOT IN ({owner_ph}) THEN m.message_id
+                END) AS comments
+            FROM streams s
+            LEFT JOIN messages m ON m.video_id = s.video_id
+            WHERE s.stream_date < ?
+            GROUP BY s.video_id
+            ORDER BY s.stream_date DESC, s.imported_at DESC
+            LIMIT 1
+            """,
+            (*owner_params, *owner_params, stream["stream_date"]),
+        ).fetchone()
+
+        category_avg = conn.execute(
+            f"""
+            SELECT
+                ROUND(AVG(x.participants), 1) AS avg_participants,
+                ROUND(AVG(x.comments), 1) AS avg_comments
+            FROM streams s
+            LEFT JOIN (
+                SELECT
+                    video_id,
+                    COUNT(DISTINCT CASE
+                        WHEN channel_id NOT IN ({owner_ph}) THEN channel_id
+                    END) AS participants,
+                    COUNT(CASE
+                        WHEN channel_id NOT IN ({owner_ph}) THEN message_id
+                    END) AS comments
+                FROM messages
+                GROUP BY video_id
+            ) x ON x.video_id = s.video_id
+            WHERE COALESCE(s.category, 'その他') = ?
+            """,
+            (*owner_params, *owner_params, stream["category"]),
+        ).fetchone()
+
+        overall_avg = conn.execute(
+            f"""
+            SELECT
+                ROUND(AVG(x.participants), 1) AS avg_participants,
+                ROUND(AVG(x.comments), 1) AS avg_comments
+            FROM streams s
+            LEFT JOIN (
+                SELECT
+                    video_id,
+                    COUNT(DISTINCT CASE
+                        WHEN channel_id NOT IN ({owner_ph}) THEN channel_id
+                    END) AS participants,
+                    COUNT(CASE
+                        WHEN channel_id NOT IN ({owner_ph}) THEN message_id
+                    END) AS comments
+                FROM messages
+                GROUP BY video_id
+            ) x ON x.video_id = s.video_id
+            """,
+            owner_params * 2,
+        ).fetchone()
+
+    participants = int(stats["participants"] or 0)
+    comments = int(stats["comments"] or 0)
+    category_avg_participants = float(category_avg["avg_participants"] or 0)
+    category_avg_comments = float(category_avg["avg_comments"] or 0)
+
+    grade = grade_stream(
+        participants,
+        comments,
+        float(overall_avg["avg_participants"] or 0),
+        float(overall_avg["avg_comments"] or 0),
+    )
+
+    notes = build_stream_notes(
+        participants=participants,
+        comments=comments,
+        new_count=len(new_people),
+        returning_count=len(returning_people),
+        previous_participants=int(previous["participants"]) if previous else None,
+        previous_comments=int(previous["comments"]) if previous else None,
+        category_avg_participants=category_avg_participants,
+        category_avg_comments=category_avg_comments,
+    )
+
     return {
         "stream": dict(stream),
         "stats": dict(stats),
         "top_commenters": [dict(r) for r in top],
         "new_listeners": [dict(r) for r in new_people],
+        "returning_listeners": [dict(r) for r in returning_people],
+        "previous_stream": dict(previous) if previous else None,
+        "category_average": dict(category_avg),
+        "overall_average": dict(overall_avg),
+        "grade": grade,
+        "notes": notes,
     }
+
 
 def search_listeners(query: str, limit: int = 100) -> list[dict[str, Any]]:
     owner_ph = placeholders(OWNER_CHANNEL_IDS)
@@ -692,7 +913,7 @@ def main() -> None:
         raise SystemExit(f"index.html not found: {INDEX_PATH}")
 
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("VTuber Analytics Web App v0.6.2")
+    print("VTuber Analytics Web App v0.7.0")
     print(f"Open: http://{HOST}:{PORT}")
     print("Press Ctrl+C to stop.")
 
