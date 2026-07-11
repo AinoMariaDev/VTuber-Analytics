@@ -19,6 +19,32 @@ HOST = "127.0.0.1"
 PORT = 8765
 OWNER_CHANNEL_IDS = {"UCbPtcsXkPLLiOySGZJW92gw"}
 
+APP_CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
+APP_CONFIG_EXAMPLE_PATH = PROJECT_DIR / "app_config.example.json"
+
+DEFAULT_APP_CONFIG = {
+    "app_name": "VTuber Analytics",
+    "powered_by": "Aino Maria",
+    "channel_name": "Aino Maria",
+    "owner_channel_ids": ["UCbPtcsXkPLLiOySGZJW92gw"],
+    "host": "127.0.0.1",
+    "port": 8765
+}
+
+def load_app_config() -> dict[str, Any]:
+    if not APP_CONFIG_PATH.exists():
+        APP_CONFIG_PATH.write_text(
+            json.dumps(DEFAULT_APP_CONFIG, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    try:
+        with APP_CONFIG_PATH.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        data = DEFAULT_APP_CONFIG.copy()
+    return data
+
+
 MODERATION_RULES_PATH = PROJECT_DIR / "moderation_rules.local.json"
 MODERATION_RULES_EXAMPLE_PATH = PROJECT_DIR / "moderation_rules.example.json"
 
@@ -1441,6 +1467,19 @@ def export_moderation_csv() -> bytes:
 
     return output.getvalue().encode("utf-8-sig")
 
+
+def get_app_info() -> dict[str, Any]:
+    config = load_app_config()
+    return {
+        "version": "0.9.0-rc1",
+        "app_name": config.get("app_name", "VTuber Analytics"),
+        "powered_by": config.get("powered_by", "Aino Maria"),
+        "channel_name": config.get("channel_name", "Aino Maria"),
+        "database_exists": DB_PATH.exists(),
+        "database_path": str(DB_PATH),
+        "moderation_rules_exists": MODERATION_RULES_PATH.exists(),
+    }
+
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, value: Any, status: int = 200) -> None:
         body = json_bytes(value)
@@ -1485,6 +1524,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/":
                 self.send_html()
+            elif path == "/api/app-info":
+                self.send_json(get_app_info())
             elif path == "/api/summary":
                 self.send_json(get_summary())
             elif path == "/api/categories":
@@ -1566,9 +1607,13 @@ def main() -> None:
 
     ensure_moderation_storage()
 
-    server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("VTuber Analytics Web App v0.8.1")
-    print(f"Open: http://{HOST}:{PORT}")
+    config = load_app_config()
+    host = str(config.get("host", HOST))
+    port = int(config.get("port", PORT))
+
+    server = ThreadingHTTPServer((host, port), Handler)
+    print("VTuber Analytics Web App v0.9.0-rc1")
+    print(f"Open: http://{host}:{port}")
     print("Press Ctrl+C to stop.")
 
     try:

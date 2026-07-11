@@ -106,8 +106,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 </head>
 <body>
 <header>
-<h1>愛野まりあ YouTube Analytics</h1>
-<p>コメント参加者ベースのローカル分析アプリ v0.8.1</p>
+<h1 id="appTitle">VTuber Analytics</h1>
+<p id="appSubtitle">Powered by Aino Maria</p>
 <nav>
 <button data-tab="dashboard" class="active">ダッシュボード</button>
 <button data-tab="listeners">リスナー検索</button>
@@ -716,7 +716,22 @@ document.querySelectorAll("#listenerFilters .filter-btn").forEach(btn=>btn.addEv
   listenerFilter=btn.dataset.filter;
   renderListeners();
 }));document.getElementById("detailModal").addEventListener("click",e=>{if(e.target.id==="detailModal")closeModal()});
+
+async function loadAppInfo(){
+  try{
+    const info=await api("/api/app-info");
+    document.getElementById("appTitle").textContent=info.app_name;
+    document.getElementById("appSubtitle").textContent=`Powered by ${info.powered_by} / v${info.version}`;
+    document.getElementById("footerBrand").textContent=`${info.app_name} - Powered by ${info.powered_by}`;
+  }catch(e){}
+}
+loadAppInfo();
 loadDashboard();
 </script>
+
+<footer style="text-align:center;padding:24px;color:#667085">
+  <div id="footerBrand">VTuber Analytics - Powered by Aino Maria</div>
+  <div>Release Candidate 0.9.0-rc1</div>
+</footer>
 </body>
 </html>

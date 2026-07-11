@@ -1,3 +1,7 @@
 
 # Local moderation rules
 moderation_rules.local.json
+
+app_config.local.json
+
+backups/

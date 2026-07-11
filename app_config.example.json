@@ -1,0 +1,10 @@
+{
+  "app_name": "VTuber Analytics",
+  "powered_by": "Aino Maria",
+  "channel_name": "Aino Maria",
+  "owner_channel_ids": [
+    "YOUR_YOUTUBE_CHANNEL_ID"
+  ],
+  "host": "127.0.0.1",
+  "port": 8765
+}
