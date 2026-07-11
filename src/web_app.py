@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
+import re
 import sqlite3
 import urllib.parse
 from collections import defaultdict
@@ -15,6 +18,94 @@ INDEX_PATH = PROJECT_DIR / "web" / "index.html"
 HOST = "127.0.0.1"
 PORT = 8765
 OWNER_CHANNEL_IDS = {"UCbPtcsXkPLLiOySGZJW92gw"}
+
+MODERATION_RULES_PATH = PROJECT_DIR / "moderation_rules.local.json"
+MODERATION_RULES_EXAMPLE_PATH = PROJECT_DIR / "moderation_rules.example.json"
+
+DEFAULT_MODERATION_RULES = {
+    "categories": {
+        "sexual": {
+            "label": "セクハラ・性的表現",
+            "keywords": [
+                "胸見せ", "パンツ見せ", "脱いで", "抱かせて",
+                "キスして", "エロい", "下着", "おっぱい"
+            ],
+            "patterns": []
+        },
+        "distance": {
+            "label": "距離感・独占的発言",
+            "keywords": [
+                "俺だけ見て", "他の男", "彼氏いる", "付き合って",
+                "結婚して", "俺のもの"
+            ],
+            "patterns": []
+        },
+        "abuse": {
+            "label": "暴言・攻撃的表現",
+            "keywords": [
+                "死ね", "消えろ", "気持ち悪い", "きもい"
+            ],
+            "patterns": []
+        }
+    }
+}
+
+def ensure_moderation_storage() -> None:
+    if not MODERATION_RULES_PATH.exists():
+        MODERATION_RULES_PATH.write_text(
+            json.dumps(DEFAULT_MODERATION_RULES, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    with connect() as conn:
+        conn.executescript("""
+        CREATE TABLE IF NOT EXISTS moderation_reviews (
+            message_id TEXT PRIMARY KEY,
+            status TEXT NOT NULL DEFAULT '未確認',
+            category TEXT,
+            memo TEXT,
+            reviewed_at TEXT,
+            FOREIGN KEY (message_id) REFERENCES messages(message_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_moderation_status
+        ON moderation_reviews(status);
+        """)
+        conn.commit()
+
+def load_moderation_rules() -> dict[str, Any]:
+    ensure_moderation_storage()
+    try:
+        with MODERATION_RULES_PATH.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return DEFAULT_MODERATION_RULES
+
+def detect_rule_matches(text: str, rules: dict[str, Any]) -> list[dict[str, str]]:
+    normalized = text.casefold()
+    matches: list[dict[str, str]] = []
+    for key, config in rules.get("categories", {}).items():
+        label = str(config.get("label", key))
+        for keyword in config.get("keywords", []):
+            if str(keyword).casefold() in normalized:
+                matches.append({
+                    "category": key,
+                    "label": label,
+                    "rule": f"keyword:{keyword}",
+                })
+                break
+        for pattern in config.get("patterns", []):
+            try:
+                if re.search(str(pattern), text, re.IGNORECASE):
+                    matches.append({
+                        "category": key,
+                        "label": label,
+                        "rule": f"regex:{pattern}",
+                    })
+                    break
+            except re.error:
+                continue
+    return matches
+
 
 def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
@@ -1108,6 +1199,248 @@ def get_community_analysis() -> dict[str, Any]:
     }
 
 
+
+def get_moderation_candidates(
+    query: str = "",
+    status_filter: str = "",
+    category_filter: str = "",
+    limit: int = 200,
+) -> list[dict[str, Any]]:
+    rules = load_moderation_rules()
+    owner_ph = placeholders(OWNER_CHANNEL_IDS)
+    owner_params = tuple(OWNER_CHANNEL_IDS)
+
+    with connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT
+                m.message_id,
+                m.video_id,
+                m.channel_id,
+                l.latest_display_name AS display_name,
+                m.message_text,
+                m.timestamp_text,
+                s.stream_date,
+                s.title,
+                COALESCE(r.status, '未確認') AS review_status,
+                COALESCE(r.category, '') AS review_category,
+                COALESCE(r.memo, '') AS memo,
+                COALESCE(r.reviewed_at, '') AS reviewed_at
+            FROM messages m
+            JOIN listeners l ON l.channel_id = m.channel_id
+            JOIN streams s ON s.video_id = m.video_id
+            LEFT JOIN moderation_reviews r ON r.message_id = m.message_id
+            WHERE m.channel_id NOT IN ({owner_ph})
+              AND m.message_text IS NOT NULL
+              AND m.message_text <> ''
+            ORDER BY s.stream_date DESC, m.timestamp_usec DESC
+            LIMIT 5000
+            """,
+            owner_params,
+        ).fetchall()
+
+    result: list[dict[str, Any]] = []
+    q = query.casefold().strip()
+
+    for row in rows:
+        item = dict(row)
+        matches = detect_rule_matches(item["message_text"], rules)
+        if not matches and item["review_status"] == "未確認":
+            continue
+
+        item["matches"] = matches
+        item["detected_category"] = matches[0]["category"] if matches else ""
+        item["detected_label"] = matches[0]["label"] if matches else ""
+        item["detected_rule"] = matches[0]["rule"] if matches else ""
+
+        if q and q not in item["display_name"].casefold() and q not in item["message_text"].casefold():
+            continue
+        if status_filter and item["review_status"] != status_filter:
+            continue
+        effective_category = item["review_category"] or item["detected_category"]
+        if category_filter and effective_category != category_filter:
+            continue
+
+        result.append(item)
+        if len(result) >= limit:
+            break
+
+    return result
+
+def get_message_context(message_id: str, radius: int = 3) -> dict[str, Any] | None:
+    ensure_moderation_storage()
+    with connect() as conn:
+        target = conn.execute(
+            """
+            SELECT
+                m.message_id,
+                m.video_id,
+                m.channel_id,
+                l.latest_display_name AS display_name,
+                m.message_text,
+                m.timestamp_text,
+                m.timestamp_usec,
+                s.stream_date,
+                s.title,
+                COALESCE(r.status, '未確認') AS review_status,
+                COALESCE(r.category, '') AS review_category,
+                COALESCE(r.memo, '') AS memo,
+                COALESCE(r.reviewed_at, '') AS reviewed_at
+            FROM messages m
+            JOIN listeners l ON l.channel_id = m.channel_id
+            JOIN streams s ON s.video_id = m.video_id
+            LEFT JOIN moderation_reviews r ON r.message_id = m.message_id
+            WHERE m.message_id = ?
+            """,
+            (message_id,),
+        ).fetchone()
+        if not target:
+            return None
+
+        all_rows = conn.execute(
+            """
+            SELECT
+                m.message_id,
+                m.channel_id,
+                l.latest_display_name AS display_name,
+                m.message_text,
+                m.timestamp_text,
+                m.timestamp_usec
+            FROM messages m
+            JOIN listeners l ON l.channel_id = m.channel_id
+            WHERE m.video_id = ?
+            ORDER BY
+                CASE
+                    WHEN m.timestamp_usec GLOB '[0-9]*' THEN CAST(m.timestamp_usec AS INTEGER)
+                    ELSE 0
+                END,
+                m.message_id
+            """,
+            (target["video_id"],),
+        ).fetchall()
+
+        ids = [r["message_id"] for r in all_rows]
+        try:
+            index = ids.index(message_id)
+        except ValueError:
+            index = 0
+        start = max(0, index - radius)
+        end = min(len(all_rows), index + radius + 1)
+        context = [dict(r) for r in all_rows[start:end]]
+
+        history = conn.execute(
+            """
+            SELECT
+                m.message_id,
+                s.stream_date,
+                s.title,
+                m.message_text,
+                COALESCE(r.status, '未確認') AS review_status,
+                COALESCE(r.category, '') AS review_category,
+                COALESCE(r.memo, '') AS memo
+            FROM moderation_reviews r
+            JOIN messages m ON m.message_id = r.message_id
+            JOIN streams s ON s.video_id = m.video_id
+            WHERE m.channel_id = ?
+            ORDER BY s.stream_date DESC
+            LIMIT 50
+            """,
+            (target["channel_id"],),
+        ).fetchall()
+
+    rules = load_moderation_rules()
+    result = dict(target)
+    result["matches"] = detect_rule_matches(result["message_text"], rules)
+    return {
+        "target": result,
+        "context": context,
+        "history": [dict(r) for r in history],
+    }
+
+def save_moderation_review(
+    message_id: str,
+    status: str,
+    category: str,
+    memo: str,
+) -> dict[str, Any]:
+    ensure_moderation_storage()
+    allowed_statuses = {
+        "未確認", "問題なし", "注意", "セクハラ",
+        "暴言", "距離感", "荒らし", "対応済み"
+    }
+    if status not in allowed_statuses:
+        raise ValueError("invalid moderation status")
+
+    with connect() as conn:
+        exists = conn.execute(
+            "SELECT 1 FROM messages WHERE message_id = ?",
+            (message_id,),
+        ).fetchone()
+        if not exists:
+            raise ValueError("message not found")
+
+        conn.execute(
+            """
+            INSERT INTO moderation_reviews(
+                message_id, status, category, memo, reviewed_at
+            )
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(message_id) DO UPDATE SET
+                status = excluded.status,
+                category = excluded.category,
+                memo = excluded.memo,
+                reviewed_at = CURRENT_TIMESTAMP
+            """,
+            (message_id, status, category, memo),
+        )
+        conn.commit()
+
+    return {"ok": True}
+
+def export_moderation_csv() -> bytes:
+    ensure_moderation_storage()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "配信日", "配信タイトル", "動画ID", "発言時刻",
+        "表示名", "チャンネルID", "コメント", "判定",
+        "カテゴリ", "対応メモ", "確認日時"
+    ])
+
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+                s.stream_date,
+                s.title,
+                m.video_id,
+                m.timestamp_text,
+                l.latest_display_name,
+                m.channel_id,
+                m.message_text,
+                r.status,
+                r.category,
+                r.memo,
+                r.reviewed_at
+            FROM moderation_reviews r
+            JOIN messages m ON m.message_id = r.message_id
+            JOIN listeners l ON l.channel_id = m.channel_id
+            JOIN streams s ON s.video_id = m.video_id
+            WHERE r.status <> '未確認'
+            ORDER BY s.stream_date DESC, r.reviewed_at DESC
+            """
+        ).fetchall()
+
+    for row in rows:
+        writer.writerow([
+            row["stream_date"], row["title"], row["video_id"],
+            row["timestamp_text"], row["latest_display_name"],
+            row["channel_id"], row["message_text"], row["status"],
+            row["category"], row["memo"], row["reviewed_at"],
+        ])
+
+    return output.getvalue().encode("utf-8-sig")
+
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, value: Any, status: int = 200) -> None:
         body = json_bytes(value)
@@ -1117,6 +1450,23 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
+
+    def send_csv(self, body: bytes, filename: str) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "text/csv; charset=utf-8")
+        self.send_header(
+            "Content-Disposition",
+            f'attachment; filename="{filename}"'
+        )
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def read_json_body(self) -> dict[str, Any]:
+        length = int(self.headers.get("Content-Length", "0"))
+        raw = self.rfile.read(length) if length else b"{}"
+        return json.loads(raw.decode("utf-8"))
 
     def send_html(self) -> None:
         body = INDEX_PATH.read_bytes()
@@ -1143,6 +1493,31 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(get_weekdays())
             elif path == "/api/community":
                 self.send_json(get_community_analysis())
+            elif path == "/api/moderation":
+                query = params.get("q", [""])[0]
+                status_filter = params.get("status", [""])[0]
+                category_filter = params.get("category", [""])[0]
+                limit = int(params.get("limit", ["200"])[0])
+                self.send_json(get_moderation_candidates(
+                    query=query,
+                    status_filter=status_filter,
+                    category_filter=category_filter,
+                    limit=max(1, min(limit, 1000)),
+                ))
+            elif path.startswith("/api/moderation/context/"):
+                message_id = urllib.parse.unquote(
+                    path.removeprefix("/api/moderation/context/")
+                )
+                data = get_message_context(message_id)
+                self.send_json(
+                    data if data else {"error": "not found"},
+                    200 if data else 404,
+                )
+            elif path == "/api/moderation/export.csv":
+                self.send_csv(
+                    export_moderation_csv(),
+                    "moderation_reviews.csv",
+                )
             elif path == "/api/streams":
                 limit = int(params.get("limit", ["30"])[0])
                 self.send_json(get_recent_streams(max(1, min(limit, 200))))
@@ -1162,6 +1537,24 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             self.send_json({"error": str(exc)}, 500)
 
+    def do_POST(self) -> None:
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        try:
+            if path == "/api/moderation/review":
+                payload = self.read_json_body()
+                result = save_moderation_review(
+                    message_id=str(payload.get("message_id", "")),
+                    status=str(payload.get("status", "未確認")),
+                    category=str(payload.get("category", "")),
+                    memo=str(payload.get("memo", "")),
+                )
+                self.send_json(result)
+            else:
+                self.send_json({"error": "not found"}, 404)
+        except Exception as exc:
+            self.send_json({"error": str(exc)}, 400)
+
     def log_message(self, fmt: str, *args: Any) -> None:
         print(f"[Web] {self.address_string()} - {fmt % args}")
 
@@ -1171,8 +1564,10 @@ def main() -> None:
     if not INDEX_PATH.exists():
         raise SystemExit(f"index.html not found: {INDEX_PATH}")
 
+    ensure_moderation_storage()
+
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("VTuber Analytics Web App v0.8.0")
+    print("VTuber Analytics Web App v0.8.1")
     print(f"Open: http://{HOST}:{PORT}")
     print("Press Ctrl+C to stop.")
 

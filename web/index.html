@@ -85,7 +85,19 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 .affinity-track{height:10px;border-radius:6px;background:#e8edf5;overflow:hidden}
 .affinity-fill{height:100%;background:#9b72cf}
 @media(max-width:900px){.health-wrap{grid-template-columns:1fr}.metric-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:700px){.dashboard-grid{grid-template-columns:1fr 1fr}.report-hero{grid-template-columns:1fr}.comparison{grid-template-columns:1fr}.pair-row{grid-template-columns:1fr}.metric-grid{grid-template-columns:1fr}}
+
+.mod-toolbar{display:grid;grid-template-columns:1fr 180px 180px auto;gap:10px;align-items:center}
+.mod-toolbar select,.mod-toolbar input,.mod-form select,.mod-form textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:white}
+.mod-card{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:white}
+.mod-card.flagged{border-left:5px solid #c45656}
+.mod-meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-bottom:8px}
+.mod-message{font-size:16px;line-height:1.6;background:#fafbfc;padding:12px;border-radius:9px}
+.context-row{padding:10px;border-bottom:1px solid var(--line)}
+.context-row.target{background:#fff1c7;border-left:4px solid #e6a23c}
+.mod-form{display:grid;grid-template-columns:180px 180px 1fr auto;gap:10px;align-items:start}
+.export-link{display:inline-block;background:var(--navy);color:white;text-decoration:none;padding:10px 14px;border-radius:9px}
+@media(max-width:900px){.mod-toolbar,.mod-form{grid-template-columns:1fr}}
+
 
 
 @media(max-width:900px){.grid,.two{grid-template-columns:1fr}.bar-row{grid-template-columns:100px 1fr 60px}}
@@ -95,13 +107,14 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 <body>
 <header>
 <h1>愛野まりあ YouTube Analytics</h1>
-<p>コメント参加者ベースのローカル分析アプリ v0.8.0</p>
+<p>コメント参加者ベースのローカル分析アプリ v0.8.1</p>
 <nav>
 <button data-tab="dashboard" class="active">ダッシュボード</button>
 <button data-tab="listeners">リスナー検索</button>
 <button data-tab="categories">企画分析</button>
 <button data-tab="streams">配信一覧</button>
 <button data-tab="community">コミュニティ</button>
+<button data-tab="moderation">モデレーション</button>
 </nav>
 </header>
 
@@ -184,6 +197,38 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 <h2>よく同じ配信に来る組み合わせ</h2>
 <div id="communityPairs"></div>
 </div>
+</div>
+</section>
+
+
+<section id="moderation" class="section">
+<div class="card">
+<h2>モデレーション確認</h2>
+<p class="muted">自動検知は「要確認候補」です。最終判断は必ず人が行ってください。</p>
+<div class="mod-toolbar">
+<input id="moderationSearch" placeholder="表示名またはコメントで検索">
+<select id="moderationStatusFilter">
+<option value="">すべての判定</option>
+<option value="未確認">未確認</option>
+<option value="問題なし">問題なし</option>
+<option value="注意">注意</option>
+<option value="セクハラ">セクハラ</option>
+<option value="暴言">暴言</option>
+<option value="距離感">距離感</option>
+<option value="荒らし">荒らし</option>
+<option value="対応済み">対応済み</option>
+</select>
+<select id="moderationCategoryFilter">
+<option value="">すべての検知カテゴリ</option>
+<option value="sexual">セクハラ・性的表現</option>
+<option value="distance">距離感・独占的発言</option>
+<option value="abuse">暴言・攻撃的表現</option>
+</select>
+<a class="export-link" href="/api/moderation/export.csv">確認済みCSV出力</a>
+</div>
+</div>
+<div class="card">
+<div id="moderationResults"></div>
 </div>
 </section>
 
@@ -443,6 +488,115 @@ async function loadCommunity(){
   }
 }
 
+
+let moderationTimer;
+
+async function loadModeration(){
+  const q=document.getElementById("moderationSearch").value.trim();
+  const status=document.getElementById("moderationStatusFilter").value;
+  const category=document.getElementById("moderationCategoryFilter").value;
+  const rows=await api(`/api/moderation?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}&limit=300`);
+
+  if(!rows.length){
+    document.getElementById("moderationResults").innerHTML="<p>該当する要確認コメントはありません。</p>";
+    return;
+  }
+
+  document.getElementById("moderationResults").innerHTML=rows.map(r=>`
+    <div class="mod-card flagged">
+      <div class="mod-meta">
+        <span>${esc(r.stream_date)}</span>
+        <span>${esc(r.title)}</span>
+        <span>${esc(r.timestamp_text)}</span>
+        <span>${esc(r.display_name)}</span>
+        <span class="status ${statusClass(r.review_status)}">${esc(r.review_status)}</span>
+      </div>
+      <div class="mod-message">${esc(r.message_text)}</div>
+      <p class="muted">検知：${esc(r.detected_label||"手動登録")} / ${esc(r.detected_rule||"-")}</p>
+      <button class="link-button" onclick="openModeration('${encodeURIComponent(r.message_id)}')">前後の文脈と判定を開く</button>
+    </div>`).join("");
+}
+
+function scheduleModerationLoad(){
+  clearTimeout(moderationTimer);
+  moderationTimer=setTimeout(loadModeration,250);
+}
+
+async function openModeration(messageIdEnc){
+  const d=await api(`/api/moderation/context/${messageIdEnc}`);
+  const t=d.target;
+  const contextRows=d.context.map(r=>`
+    <div class="context-row ${r.message_id===t.message_id?"target":""}">
+      <strong>${esc(r.display_name)}</strong>
+      <span class="muted"> ${esc(r.timestamp_text)}</span>
+      <div>${esc(r.message_text)}</div>
+    </div>`).join("");
+
+  const historyRows=d.history.length?table(
+    ["日付","タイトル","コメント","判定","メモ"],
+    d.history.map(r=>`<tr>
+      <td>${esc(r.stream_date)}</td>
+      <td>${esc(r.title)}</td>
+      <td>${esc(r.message_text)}</td>
+      <td>${esc(r.review_status)}</td>
+      <td>${esc(r.memo)}</td>
+    </tr>`)
+  ):"<p>過去の確認履歴はありません。</p>";
+
+  document.getElementById("detailBody").innerHTML=`
+    <h2>モデレーション確認</h2>
+    <p><strong>${esc(t.display_name)}</strong> / ${esc(t.stream_date)} / ${esc(t.title)}</p>
+    <div class="card">
+      <h3>前後の文脈</h3>
+      ${contextRows}
+    </div>
+
+    <div class="card">
+      <h3>手動判定</h3>
+      <div class="mod-form">
+        <select id="reviewStatus">
+          ${["未確認","問題なし","注意","セクハラ","暴言","距離感","荒らし","対応済み"].map(x=>`<option value="${x}" ${x===t.review_status?"selected":""}>${x}</option>`).join("")}
+        </select>
+        <select id="reviewCategory">
+          <option value="">カテゴリなし</option>
+          <option value="sexual" ${t.review_category==="sexual"?"selected":""}>セクハラ・性的表現</option>
+          <option value="distance" ${t.review_category==="distance"?"selected":""}>距離感・独占的発言</option>
+          <option value="abuse" ${t.review_category==="abuse"?"selected":""}>暴言・攻撃的表現</option>
+          <option value="other" ${t.review_category==="other"?"selected":""}>その他</option>
+        </select>
+        <textarea id="reviewMemo" rows="4" placeholder="対応内容、注意日、経緯など">${esc(t.memo)}</textarea>
+        <button onclick="saveModerationReview('${encodeURIComponent(t.message_id)}')">保存</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>この発言者の確認履歴</h3>
+      ${historyRows}
+    </div>`;
+  openModal();
+}
+
+async function saveModerationReview(messageIdEnc){
+  const response=await fetch("/api/moderation/review",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      message_id:decodeURIComponent(messageIdEnc),
+      status:document.getElementById("reviewStatus").value,
+      category:document.getElementById("reviewCategory").value,
+      memo:document.getElementById("reviewMemo").value
+    })
+  });
+  const data=await response.json();
+  if(!response.ok){
+    alert(data.error||"保存に失敗しました。");
+    return;
+  }
+  alert("保存しました。");
+  closeModal();
+  loadModeration();
+}
+
 async function openListener(idEnc){
   const d=await api(`/api/listener/${idEnc}`),p=d.profile;
   const monthly=[...d.monthly];
@@ -548,8 +702,11 @@ async function openStream(idEnc){
   openModal();
 }
 function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}
-document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams();if(b.dataset.tab==="community")loadCommunity()}));
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams();if(b.dataset.tab==="community")loadCommunity();if(b.dataset.tab==="moderation")loadModeration()}));
 document.getElementById("listenerSearch").addEventListener("input",searchListeners);
+document.getElementById("moderationSearch").addEventListener("input",scheduleModerationLoad);
+document.getElementById("moderationStatusFilter").addEventListener("change",loadModeration);
+document.getElementById("moderationCategoryFilter").addEventListener("change",loadModeration);
 document.getElementById("quickListenerSearch").addEventListener("keydown",e=>{
   if(e.key==="Enter")quickSearchListener();
 });

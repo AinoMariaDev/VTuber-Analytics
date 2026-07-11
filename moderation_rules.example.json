@@ -1,0 +1,29 @@
+{
+  "categories": {
+    "sexual": {
+      "label": "セクハラ・性的表現",
+      "keywords": [
+        "胸見せ",
+        "脱いで",
+        "下着"
+      ],
+      "patterns": []
+    },
+    "distance": {
+      "label": "距離感・独占的発言",
+      "keywords": [
+        "俺だけ見て",
+        "付き合って"
+      ],
+      "patterns": []
+    },
+    "abuse": {
+      "label": "暴言・攻撃的表現",
+      "keywords": [
+        "死ね",
+        "消えろ"
+      ],
+      "patterns": []
+    }
+  }
+}
