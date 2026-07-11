@@ -42,13 +42,34 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:100;padding:24px}.modal.open{display:flex;align-items:center;justify-content:center}.modal-content{background:white;width:min(1000px,100%);max-height:90vh;overflow:auto;border-radius:16px;padding:22px}.close{float:right;border:0;background:#eee;border-radius:50%;width:34px;height:34px;cursor:pointer}
 .chart{width:100%;height:260px;background:#fafbfc;border:1px solid var(--line);border-radius:12px}.chart text{font-size:11px;fill:#667085}.chart .axis{stroke:#cfd6df;stroke-width:1}.chart .line-a{fill:none;stroke:#5470c6;stroke-width:3}.chart .line-b{fill:none;stroke:#e97c9d;stroke-width:3}
 .type{display:inline-block;padding:6px 10px;border-radius:16px;background:#ffeaf1;color:#9d365a;font-weight:bold}
+
+.dashboard-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px}
+.dashboard-card{background:white;border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-top:4px solid var(--blue)}
+.dashboard-card strong{display:block;font-size:28px;margin-top:7px}
+.dashboard-card.super{border-top-color:#4c956c}
+.dashboard-card.regular{border-top-color:#5470c6}
+.dashboard-card.new{border-top-color:#e6a23c}
+.dashboard-card.returning{border-top-color:#9b72cf}
+.dashboard-card.dormant{border-top-color:#c45656}
+.insight{border-left:5px solid var(--pink);background:#fff;padding:16px 18px;border-radius:12px;margin-bottom:18px}
+.quick-search{display:flex;gap:8px}
+.quick-search input{flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:10px}
+.quick-search button{border:0;background:var(--navy);color:white;border-radius:10px;padding:0 16px;cursor:pointer}
+.mini-bars{display:grid;gap:9px}
+.mini-row{display:grid;grid-template-columns:100px 1fr 55px;gap:10px;align-items:center}
+.mini-track{height:13px;border-radius:7px;background:#e8edf5;overflow:hidden}
+.mini-fill-a{height:100%;background:#5470c6}
+.mini-fill-b{height:100%;background:#e97c9d}
+@media(max-width:1050px){.dashboard-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.dashboard-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:900px){.grid,.two{grid-template-columns:1fr}.bar-row{grid-template-columns:100px 1fr 60px}}
+
 </style>
 </head>
 <body>
 <header>
 <h1>愛野まりあ YouTube Analytics</h1>
-<p>コメント参加者ベースのローカル分析アプリ v0.6.1</p>
+<p>コメント参加者ベースのローカル分析アプリ v0.6.2</p>
 <nav>
 <button data-tab="dashboard" class="active">ダッシュボード</button>
 <button data-tab="listeners">リスナー検索</button>
@@ -59,15 +80,32 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 
 <main>
 <section id="dashboard" class="section active">
-<div id="kpis" class="grid"></div>
+<div class="card">
+<div class="quick-search">
+<input id="quickListenerSearch" placeholder="リスナー名を入力して検索">
+<button onclick="quickSearchListener()">検索</button>
+</div>
+</div>
+
+<div id="dashboardCards" class="dashboard-grid"></div>
+
+<div id="dashboardInsight" class="insight"></div>
+
+<div class="two">
+<div class="card"><h2>直近7配信・参加人数</h2><div id="recentParticipantsBars"></div></div>
+<div class="card"><h2>直近7配信・コメント数</h2><div id="recentCommentsBars"></div></div>
+</div>
+
 <div class="two">
 <div class="card"><h2>直近30配信・参加人数</h2><div id="participantsChart"></div></div>
 <div class="card"><h2>直近30配信・コメント数</h2><div id="commentsChart"></div></div>
 </div>
+
 <div class="two">
 <div class="card"><h2>常連TOP10</h2><div id="topListeners"></div></div>
 <div class="card"><h2>企画別・平均参加人数</h2><div id="categoryBars"></div></div>
 </div>
+
 <div class="card"><h2>曜日別分析</h2><div id="weekdayTable"></div></div>
 </section>
 
@@ -113,17 +151,119 @@ function statusClass(status){
   if(status==="休眠候補")return "status-dormant";
   return "status-low";
 }
+function recentBars(rows,key,fillClass){
+  const recent=[...rows].slice(0,7).reverse();
+  const max=Math.max(...recent.map(r=>Number(r[key]||0)),1);
+  return `<div class="mini-bars">${recent.map(r=>`
+    <div class="mini-row">
+      <div>${esc((r.stream_date||"").slice(5))}</div>
+      <div class="mini-track"><div class="${fillClass}" style="width:${(Number(r[key]||0)/max)*100}%"></div></div>
+      <div>${r[key]||0}</div>
+    </div>`).join("")}</div>`;
+}
+
+function buildInsight(summary,categories,streams){
+  const notes=[];
+  const counts=summary.status_counts||{};
+  if((counts.new||0)>=5)notes.push(`直近30日で新規コメント参加者が ${counts.new} 人います。新規が定着しやすい導線を意識すると良さそうです。`);
+  if((counts.dormant||0)>=10)notes.push(`60日以上コメントがない休眠候補が ${counts.dormant} 人います。久しぶりの人も入りやすい企画が候補です。`);
+  if((counts.returning||0)>0)notes.push(`最近復帰したリスナーが ${counts.returning} 人確認されています。戻りやすい空気は維持できています。`);
+
+  if(categories.length){
+    const best=categories[0];
+    notes.push(`平均コメント参加人数が最も高い企画は「${best.category}」で、平均 ${best.avg_participants} 人です。`);
+  }
+
+  if(streams.length>=2){
+    const latest=streams[0], previous=streams[1];
+    const diff=(latest.participants||0)-(previous.participants||0);
+    if(diff>0)notes.push(`最新配信のコメント参加人数は前回より ${diff} 人増えています。`);
+    else if(diff<0)notes.push(`最新配信のコメント参加人数は前回より ${Math.abs(diff)} 人少なめです。`);
+    else notes.push("最新配信のコメント参加人数は前回と同じです。");
+  }
+
+  return notes.length?`<h2>今日の分析</h2><p>${notes.join("</p><p>")}</p>`:"<h2>今日の分析</h2><p>分析できるデータがまだ不足しています。</p>";
+}
+
 async function loadDashboard(){
-  const [s,c,w,streams]=await Promise.all([api("/api/summary"),api("/api/categories"),api("/api/weekdays"),api("/api/streams?limit=30")]);
+  const [s,c,w,streams]=await Promise.all([
+    api("/api/summary"),
+    api("/api/categories"),
+    api("/api/weekdays"),
+    api("/api/streams?limit=30")
+  ]);
+
+  const counts=s.status_counts||{};
+  const cards=[
+    ["総リスナー",s.total_listeners,""],
+    ["超常連",counts.super_regular||0,"super"],
+    ["常連",counts.regular||0,"regular"],
+    ["新規",counts.new||0,"new"],
+    ["復帰",counts.returning||0,"returning"],
+    ["休眠候補",counts.dormant||0,"dormant"]
+  ];
+  document.getElementById("dashboardCards").innerHTML=cards.map(([label,value,cls])=>`
+    <div class="dashboard-card ${cls}">
+      <span class="muted">${label}</span>
+      <strong>${value}</strong>
+    </div>`).join("");
+
+  document.getElementById("dashboardInsight").innerHTML=buildInsight(s,c,streams);
+  document.getElementById("recentParticipantsBars").innerHTML=recentBars(streams,"participants","mini-fill-a");
+  document.getElementById("recentCommentsBars").innerHTML=recentBars(streams,"comments","mini-fill-b");
+
   const ordered=[...streams].reverse();
-  document.getElementById("kpis").innerHTML=[["配信数",s.total_streams],["リスナー数",s.total_listeners],["総コメント数",s.total_comments.toLocaleString()],["30日以上コメントなし",s.inactive_30]].map(([l,v])=>`<div class="card"><div class="muted">${l}</div><div class="kpi">${v}</div></div>`).join("");
   document.getElementById("participantsChart").innerHTML=lineChart(ordered,"participants","line-a");
   document.getElementById("commentsChart").innerHTML=lineChart(ordered,"comments","line-b");
-  document.getElementById("topListeners").innerHTML=table(["順位","表示名","参加配信","コメント"],s.top_listeners.map((r,i)=>`<tr><td>${i+1}</td><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td><td>${r.stream_count}</td><td>${r.comment_count}</td></tr>`));
+
+  document.getElementById("topListeners").innerHTML=table(
+    ["順位","表示名","参加配信","コメント"],
+    s.top_listeners.map((r,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td>
+        <td>${r.stream_count}</td>
+        <td>${r.comment_count}</td>
+      </tr>`)
+  );
+
   const max=Math.max(...c.map(r=>r.avg_participants||0),1);
-  document.getElementById("categoryBars").innerHTML=c.map(r=>`<div class="bar-row"><div>${esc(r.category)}</div><div class="bar"><div style="width:${((r.avg_participants||0)/max)*100}%"></div></div><div>${r.avg_participants??0}</div></div>`).join("");
-  document.getElementById("weekdayTable").innerHTML=table(["曜日","配信数","平均参加人数","平均コメント"],w.map(r=>`<tr><td>${esc(r.weekday)}曜日</td><td>${r.stream_count}</td><td>${r.avg_participants}</td><td>${r.avg_comments}</td></tr>`));
+  document.getElementById("categoryBars").innerHTML=c.map(r=>`
+    <div class="bar-row">
+      <div>${esc(r.category)}</div>
+      <div class="bar"><div style="width:${((r.avg_participants||0)/max)*100}%"></div></div>
+      <div>${r.avg_participants??0}</div>
+    </div>`).join("");
+
+  document.getElementById("weekdayTable").innerHTML=table(
+    ["曜日","配信数","平均参加人数","平均コメント"],
+    w.map(r=>`
+      <tr>
+        <td>${esc(r.weekday)}曜日</td>
+        <td>${r.stream_count}</td>
+        <td>${r.avg_participants}</td>
+        <td>${r.avg_comments}</td>
+      </tr>`)
+  );
 }
+
+async function quickSearchListener(){
+  const q=document.getElementById("quickListenerSearch").value.trim();
+  if(!q)return;
+  const rows=await api(`/api/listeners?q=${encodeURIComponent(q)}`);
+  if(rows.length===1){
+    openListener(encodeURIComponent(rows[0].channel_id));
+    return;
+  }
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
+  document.querySelector('nav button[data-tab="listeners"]').classList.add("active");
+  document.getElementById("listeners").classList.add("active");
+  document.getElementById("listenerSearch").value=q;
+  listenerRows=rows;
+  renderListeners();
+}
+
 async function loadCategories(){const rows=await api("/api/categories");document.getElementById("categoryTable").innerHTML=table(["企画","配信数","平均参加人数","平均コメント","最高参加人数","最高コメント"],rows.map(r=>`<tr><td><span class="badge">${esc(r.category)}</span></td><td>${r.stream_count}</td><td>${r.avg_participants}</td><td>${r.avg_comments}</td><td>${r.max_participants}</td><td>${r.max_comments}</td></tr>`))}
 async function loadStreams(){const rows=await api("/api/streams?limit=100");document.getElementById("streamTable").innerHTML=table(["日付","曜日","企画","タイトル","参加人数","コメント"],rows.map(r=>`<tr><td>${esc(r.stream_date)}</td><td>${esc(r.weekday)}</td><td><span class="badge">${esc(r.category)}</span></td><td><button class="link-button" onclick="openStream('${encodeURIComponent(r.video_id)}')">${esc(r.title)}</button></td><td>${r.participants}</td><td>${r.comments}</td></tr>`))}
 let timer;
@@ -225,6 +365,9 @@ async function openStream(idEnc){
 function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams()}));
 document.getElementById("listenerSearch").addEventListener("input",searchListeners);
+document.getElementById("quickListenerSearch").addEventListener("keydown",e=>{
+  if(e.key==="Enter")quickSearchListener();
+});
 document.querySelectorAll("#listenerFilters .filter-btn").forEach(btn=>btn.addEventListener("click",()=>{
   document.querySelectorAll("#listenerFilters .filter-btn").forEach(x=>x.classList.remove("active"));
   btn.classList.add("active");

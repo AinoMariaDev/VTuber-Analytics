@@ -138,6 +138,80 @@ def get_summary() -> dict[str, Any]:
             owner_params,
         ).fetchall()
 
+    # Listener lifecycle counts for the dashboard.
+    status_counts = {
+        "super_regular": 0,
+        "regular": 0,
+        "new": 0,
+        "returning": 0,
+        "dormant": 0,
+    }
+
+    with connect() as conn:
+        listeners = conn.execute(
+            f"""
+            SELECT
+                l.channel_id,
+                l.first_seen_date,
+                l.last_seen_date,
+                COUNT(DISTINCT m.video_id) AS stream_count
+            FROM listeners l
+            JOIN messages m ON m.channel_id = l.channel_id
+            WHERE l.channel_id NOT IN ({owner_ph})
+            GROUP BY l.channel_id
+            """,
+            owner_params,
+        ).fetchall()
+
+        for row in listeners:
+            participation_rate = row["stream_count"] / total_streams if total_streams else 0
+            if participation_rate >= 0.5:
+                status_counts["super_regular"] += 1
+            elif participation_rate >= 0.25:
+                status_counts["regular"] += 1
+
+            if latest_date and row["first_seen_date"]:
+                first_days = (
+                    datetime.strptime(latest_date, "%Y-%m-%d")
+                    - datetime.strptime(row["first_seen_date"], "%Y-%m-%d")
+                ).days
+                if first_days <= 30:
+                    status_counts["new"] += 1
+
+            if latest_date and row["last_seen_date"]:
+                absent_days = (
+                    datetime.strptime(latest_date, "%Y-%m-%d")
+                    - datetime.strptime(row["last_seen_date"], "%Y-%m-%d")
+                ).days
+                if absent_days >= 60:
+                    status_counts["dormant"] += 1
+
+                recent_count = conn.execute(
+                    """
+                    SELECT COUNT(DISTINCT m.video_id) AS c
+                    FROM messages m
+                    JOIN streams s ON s.video_id = m.video_id
+                    WHERE m.channel_id = ?
+                      AND s.stream_date >= date(?, '-30 day')
+                    """,
+                    (row["channel_id"], latest_date),
+                ).fetchone()["c"]
+
+                previous_count = conn.execute(
+                    """
+                    SELECT COUNT(DISTINCT m.video_id) AS c
+                    FROM messages m
+                    JOIN streams s ON s.video_id = m.video_id
+                    WHERE m.channel_id = ?
+                      AND s.stream_date >= date(?, '-60 day')
+                      AND s.stream_date < date(?, '-30 day')
+                    """,
+                    (row["channel_id"], latest_date, latest_date),
+                ).fetchone()["c"]
+
+                if recent_count > 0 and previous_count == 0 and first_days > 30:
+                    status_counts["returning"] += 1
+
     return {
         "total_streams": total_streams,
         "total_listeners": total_listeners,
@@ -145,6 +219,7 @@ def get_summary() -> dict[str, Any]:
         "latest_date": latest_date,
         "inactive_30": inactive,
         "top_listeners": [dict(r) for r in top],
+        "status_counts": status_counts,
     }
 
 def get_categories() -> list[dict[str, Any]]:
@@ -617,7 +692,7 @@ def main() -> None:
         raise SystemExit(f"index.html not found: {INDEX_PATH}")
 
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("VTuber Analytics Web App v0.6.1")
+    print("VTuber Analytics Web App v0.6.2")
     print(f"Open: http://{HOST}:{PORT}")
     print("Press Ctrl+C to stop.")
 
