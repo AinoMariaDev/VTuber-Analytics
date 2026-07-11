@@ -851,6 +851,263 @@ def get_listener(channel_id: str) -> dict[str, Any] | None:
         "monthly": [dict(r) for r in monthly],
     }
 
+
+def get_community_analysis() -> dict[str, Any]:
+    owner_ph = placeholders(OWNER_CHANNEL_IDS)
+    owner_params = tuple(OWNER_CHANNEL_IDS)
+
+    with connect() as conn:
+        latest_date = latest_stream_date(conn)
+        total_streams = conn.execute(
+            "SELECT COUNT(*) AS c FROM streams"
+        ).fetchone()["c"]
+
+        listeners = conn.execute(
+            f"""
+            SELECT
+                l.channel_id,
+                l.latest_display_name AS display_name,
+                l.first_seen_date,
+                l.last_seen_date,
+                COUNT(DISTINCT m.video_id) AS stream_count,
+                COUNT(m.message_id) AS comment_count,
+                COUNT(DISTINCT substr(s.stream_date, 1, 7)) AS active_months
+            FROM listeners l
+            JOIN messages m ON m.channel_id = l.channel_id
+            JOIN streams s ON s.video_id = m.video_id
+            WHERE l.channel_id NOT IN ({owner_ph})
+            GROUP BY l.channel_id
+            """,
+            owner_params,
+        ).fetchall()
+
+        total_listeners = len(listeners)
+        active_30 = 0
+        dormant_60 = 0
+        core_count = 0
+        new_30 = 0
+
+        for row in listeners:
+            participation_rate = row["stream_count"] / total_streams if total_streams else 0
+            if participation_rate >= 0.25:
+                core_count += 1
+
+            if latest_date and row["last_seen_date"]:
+                days_absent = (
+                    datetime.strptime(latest_date, "%Y-%m-%d")
+                    - datetime.strptime(row["last_seen_date"], "%Y-%m-%d")
+                ).days
+                if days_absent <= 30:
+                    active_30 += 1
+                if days_absent >= 60:
+                    dormant_60 += 1
+
+            if latest_date and row["first_seen_date"]:
+                first_days = (
+                    datetime.strptime(latest_date, "%Y-%m-%d")
+                    - datetime.strptime(row["first_seen_date"], "%Y-%m-%d")
+                ).days
+                if first_days <= 30:
+                    new_30 += 1
+
+        active_rate = active_30 / total_listeners if total_listeners else 0
+        core_rate = core_count / total_listeners if total_listeners else 0
+        dormant_rate = dormant_60 / total_listeners if total_listeners else 0
+
+        # Health score: transparent rule-based score, not a medical or objective metric.
+        health_score = round(
+            min(
+                100,
+                active_rate * 45
+                + min(core_rate / 0.30, 1) * 30
+                + max(0, 1 - dormant_rate) * 25
+            )
+        )
+
+        monthly_rows = conn.execute(
+            f"""
+            SELECT
+                substr(s.stream_date, 1, 7) AS month,
+                COUNT(DISTINCT s.video_id) AS stream_count,
+                COUNT(DISTINCT CASE
+                    WHEN m.channel_id NOT IN ({owner_ph}) THEN m.channel_id
+                END) AS active_listeners,
+                COUNT(CASE
+                    WHEN m.channel_id NOT IN ({owner_ph}) THEN m.message_id
+                END) AS comments
+            FROM streams s
+            LEFT JOIN messages m ON m.video_id = s.video_id
+            WHERE s.stream_date IS NOT NULL
+            GROUP BY substr(s.stream_date, 1, 7)
+            ORDER BY month
+            """,
+            owner_params * 2,
+        ).fetchall()
+
+        new_by_month = conn.execute(
+            f"""
+            SELECT
+                substr(first_seen_date, 1, 7) AS month,
+                COUNT(*) AS new_listeners
+            FROM listeners
+            WHERE channel_id NOT IN ({owner_ph})
+              AND first_seen_date IS NOT NULL
+            GROUP BY substr(first_seen_date, 1, 7)
+            ORDER BY month
+            """,
+            owner_params,
+        ).fetchall()
+
+        new_map = {r["month"]: r["new_listeners"] for r in new_by_month}
+        monthly = []
+        for row in monthly_rows:
+            item = dict(row)
+            item["new_listeners"] = new_map.get(row["month"], 0)
+            monthly.append(item)
+
+        # Retention: listeners whose first month is known, and whether they returned in a later month.
+        retention_rows = conn.execute(
+            f"""
+            SELECT
+                l.channel_id,
+                substr(l.first_seen_date, 1, 7) AS first_month,
+                COUNT(DISTINCT CASE
+                    WHEN substr(s.stream_date, 1, 7) > substr(l.first_seen_date, 1, 7)
+                    THEN substr(s.stream_date, 1, 7)
+                END) AS later_months
+            FROM listeners l
+            JOIN messages m ON m.channel_id = l.channel_id
+            JOIN streams s ON s.video_id = m.video_id
+            WHERE l.channel_id NOT IN ({owner_ph})
+              AND l.first_seen_date IS NOT NULL
+            GROUP BY l.channel_id
+            """,
+            owner_params,
+        ).fetchall()
+
+        cohort_total = len(retention_rows)
+        retained = sum(1 for r in retention_rows if r["later_months"] > 0)
+        retention_rate = retained / cohort_total if cohort_total else 0
+
+        # Co-attendance pairs: top listeners only to keep query/results practical.
+        top_ids = [
+            r["channel_id"]
+            for r in conn.execute(
+                f"""
+                SELECT m.channel_id, COUNT(DISTINCT m.video_id) AS stream_count
+                FROM messages m
+                WHERE m.channel_id NOT IN ({owner_ph})
+                GROUP BY m.channel_id
+                ORDER BY stream_count DESC
+                LIMIT 30
+                """,
+                owner_params,
+            ).fetchall()
+        ]
+
+        pair_rows = []
+        if top_ids:
+            top_ph = ",".join("?" for _ in top_ids)
+            raw_pairs = conn.execute(
+                f"""
+                SELECT
+                    a.channel_id AS channel_a,
+                    b.channel_id AS channel_b,
+                    COUNT(DISTINCT a.video_id) AS shared_streams
+                FROM messages a
+                JOIN messages b
+                  ON a.video_id = b.video_id
+                 AND a.channel_id < b.channel_id
+                WHERE a.channel_id IN ({top_ph})
+                  AND b.channel_id IN ({top_ph})
+                GROUP BY a.channel_id, b.channel_id
+                HAVING shared_streams >= 3
+                ORDER BY shared_streams DESC
+                LIMIT 20
+                """,
+                (*top_ids, *top_ids),
+            ).fetchall()
+
+            names = {
+                r["channel_id"]: r["latest_display_name"]
+                for r in conn.execute(
+                    f"""
+                    SELECT channel_id, latest_display_name
+                    FROM listeners
+                    WHERE channel_id IN ({top_ph})
+                    """,
+                    top_ids,
+                ).fetchall()
+            }
+
+            counts = {
+                r["channel_id"]: r["stream_count"]
+                for r in conn.execute(
+                    f"""
+                    SELECT channel_id, COUNT(DISTINCT video_id) AS stream_count
+                    FROM messages
+                    WHERE channel_id IN ({top_ph})
+                    GROUP BY channel_id
+                    """,
+                    top_ids,
+                ).fetchall()
+            }
+
+            for row in raw_pairs:
+                a = row["channel_a"]
+                b = row["channel_b"]
+                shared = row["shared_streams"]
+                denominator = min(counts.get(a, 1), counts.get(b, 1))
+                affinity = shared / denominator if denominator else 0
+                pair_rows.append({
+                    "name_a": names.get(a, a),
+                    "channel_a": a,
+                    "name_b": names.get(b, b),
+                    "channel_b": b,
+                    "shared_streams": shared,
+                    "affinity": affinity,
+                })
+
+        notes: list[str] = []
+        if active_rate >= 0.6:
+            notes.append("直近30日で活動しているリスナー比率が高く、現在のコミュニティは活発です。")
+        elif active_rate >= 0.35:
+            notes.append("直近30日の活動率は中程度です。定期企画や告知導線を保つ価値があります。")
+        else:
+            notes.append("直近30日の活動率は低めです。復帰しやすい企画や告知の再設計が候補です。")
+
+        if retention_rate >= 0.6:
+            notes.append("初参加後に翌月以降も戻る割合が高く、定着は良好です。")
+        elif retention_rate >= 0.35:
+            notes.append("定着率は中程度です。初参加者への次回案内を強める余地があります。")
+        else:
+            notes.append("初参加後の定着率は低めです。初見向け説明や次回予告を見直す候補です。")
+
+        if dormant_rate >= 0.4:
+            notes.append("60日以上コメントがないリスナー比率が高めです。")
+        elif dormant_rate <= 0.2:
+            notes.append("長期休眠の割合は比較的低く抑えられています。")
+
+    return {
+        "health_score": health_score,
+        "total_listeners": total_listeners,
+        "active_30": active_30,
+        "active_rate": active_rate,
+        "core_count": core_count,
+        "core_rate": core_rate,
+        "new_30": new_30,
+        "dormant_60": dormant_60,
+        "dormant_rate": dormant_rate,
+        "retained": retained,
+        "cohort_total": cohort_total,
+        "retention_rate": retention_rate,
+        "monthly": monthly,
+        "top_pairs": pair_rows,
+        "notes": notes,
+        "latest_date": latest_date,
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, value: Any, status: int = 200) -> None:
         body = json_bytes(value)
@@ -884,6 +1141,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(get_categories())
             elif path == "/api/weekdays":
                 self.send_json(get_weekdays())
+            elif path == "/api/community":
+                self.send_json(get_community_analysis())
             elif path == "/api/streams":
                 limit = int(params.get("limit", ["30"])[0])
                 self.send_json(get_recent_streams(max(1, min(limit, 200))))
@@ -913,7 +1172,7 @@ def main() -> None:
         raise SystemExit(f"index.html not found: {INDEX_PATH}")
 
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    print("VTuber Analytics Web App v0.7.0")
+    print("VTuber Analytics Web App v0.8.0")
     print(f"Open: http://{HOST}:{PORT}")
     print("Press Ctrl+C to stop.")
 

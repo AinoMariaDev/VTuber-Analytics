@@ -73,7 +73,20 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 .comparison{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
 .compare-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:white}
 .compare-card strong{font-size:24px;display:block;margin-top:5px}
-@media(max-width:700px){.dashboard-grid{grid-template-columns:1fr 1fr}.report-hero{grid-template-columns:1fr}.comparison{grid-template-columns:1fr}}
+
+.health-wrap{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:center}
+.health-score{width:180px;height:180px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:conic-gradient(#4c956c var(--health-angle),#e8edf5 0)}
+.health-inner{width:138px;height:138px;border-radius:50%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.health-inner strong{font-size:46px}
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.metric-card{background:white;border:1px solid var(--line);border-radius:12px;padding:15px}
+.metric-card strong{display:block;font-size:26px;margin-top:5px}
+.pair-row{display:grid;grid-template-columns:1fr 110px 1fr 90px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.affinity-track{height:10px;border-radius:6px;background:#e8edf5;overflow:hidden}
+.affinity-fill{height:100%;background:#9b72cf}
+@media(max-width:900px){.health-wrap{grid-template-columns:1fr}.metric-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.dashboard-grid{grid-template-columns:1fr 1fr}.report-hero{grid-template-columns:1fr}.comparison{grid-template-columns:1fr}.pair-row{grid-template-columns:1fr}.metric-grid{grid-template-columns:1fr}}
+
 
 @media(max-width:900px){.grid,.two{grid-template-columns:1fr}.bar-row{grid-template-columns:100px 1fr 60px}}
 
@@ -82,12 +95,13 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 <body>
 <header>
 <h1>愛野まりあ YouTube Analytics</h1>
-<p>コメント参加者ベースのローカル分析アプリ v0.7.0</p>
+<p>コメント参加者ベースのローカル分析アプリ v0.8.0</p>
 <nav>
 <button data-tab="dashboard" class="active">ダッシュボード</button>
 <button data-tab="listeners">リスナー検索</button>
 <button data-tab="categories">企画分析</button>
 <button data-tab="streams">配信一覧</button>
+<button data-tab="community">コミュニティ</button>
 </nav>
 </header>
 
@@ -141,6 +155,38 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 
 <section id="categories" class="section"><div class="card"><h2>企画別分析</h2><div id="categoryTable"></div></div></section>
 <section id="streams" class="section"><div class="card"><h2>最近の配信</h2><div id="streamTable"></div></div></section>
+
+<section id="community" class="section">
+<div class="card">
+<h2>コミュニティ健康度</h2>
+<div id="communityHealth"></div>
+</div>
+
+<div id="communityMetrics" class="metric-grid"></div>
+
+<div class="two" style="margin-top:18px">
+<div class="card">
+<h2>月別アクティブリスナー</h2>
+<div id="communityActiveChart"></div>
+</div>
+<div class="card">
+<h2>月別新規リスナー</h2>
+<div id="communityNewChart"></div>
+</div>
+</div>
+
+<div class="two">
+<div class="card">
+<h2>コミュニティ所見</h2>
+<div id="communityNotes"></div>
+</div>
+<div class="card">
+<h2>よく同じ配信に来る組み合わせ</h2>
+<div id="communityPairs"></div>
+</div>
+</div>
+</section>
+
 </main>
 
 <div id="detailModal" class="modal"><div class="modal-content"><button class="close" onclick="closeModal()">×</button><div id="detailBody"></div></div></div>
@@ -341,6 +387,62 @@ async function searchListeners(){
     renderListeners();
   },250);
 }
+
+async function loadCommunity(){
+  const d=await api("/api/community");
+  const angle=Math.max(0,Math.min(100,d.health_score))*3.6;
+
+  document.getElementById("communityHealth").innerHTML=`
+    <div class="health-wrap">
+      <div class="health-score" style="--health-angle:${angle}deg">
+        <div class="health-inner">
+          <span class="muted">健康度</span>
+          <strong>${d.health_score}</strong>
+          <span>/ 100</span>
+        </div>
+      </div>
+      <div>
+        <p>この指標は、直近活動率・コア層比率・休眠率から計算した内部用の参考値です。</p>
+        <p class="muted">医療的・客観的な「健康」を意味するものではありません。</p>
+      </div>
+    </div>`;
+
+  const metrics=[
+    ["直近30日アクティブ",d.active_30,`${(d.active_rate*100).toFixed(1)}%`],
+    ["コア層",d.core_count,`${(d.core_rate*100).toFixed(1)}%`],
+    ["直近30日新規",d.new_30,"人"],
+    ["60日以上休眠",d.dormant_60,`${(d.dormant_rate*100).toFixed(1)}%`],
+    ["翌月以降も定着",d.retained,`${(d.retention_rate*100).toFixed(1)}%`],
+    ["定着判定対象",d.cohort_total,"人"]
+  ];
+  document.getElementById("communityMetrics").innerHTML=metrics.map(([label,value,sub])=>`
+    <div class="metric-card">
+      <span class="muted">${esc(label)}</span>
+      <strong>${value}</strong>
+      <span class="muted">${esc(sub)}</span>
+    </div>`).join("");
+
+  document.getElementById("communityActiveChart").innerHTML=lineChart(d.monthly,"active_listeners","line-a","month");
+  document.getElementById("communityNewChart").innerHTML=lineChart(d.monthly,"new_listeners","line-b","month");
+
+  document.getElementById("communityNotes").innerHTML=`<ul>${d.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`;
+
+  if(!d.top_pairs.length){
+    document.getElementById("communityPairs").innerHTML="<p>十分な組み合わせデータがありません。</p>";
+  }else{
+    document.getElementById("communityPairs").innerHTML=d.top_pairs.map(p=>`
+      <div class="pair-row">
+        <button class="link-button" onclick="openListener('${encodeURIComponent(p.channel_a)}')">${esc(p.name_a)}</button>
+        <div>
+          <div class="affinity-track"><div class="affinity-fill" style="width:${Math.min(p.affinity*100,100)}%"></div></div>
+          <small>${p.shared_streams}配信</small>
+        </div>
+        <button class="link-button" onclick="openListener('${encodeURIComponent(p.channel_b)}')">${esc(p.name_b)}</button>
+        <strong>${(p.affinity*100).toFixed(0)}%</strong>
+      </div>`).join("");
+  }
+}
+
 async function openListener(idEnc){
   const d=await api(`/api/listener/${idEnc}`),p=d.profile;
   const monthly=[...d.monthly];
@@ -446,7 +548,7 @@ async function openStream(idEnc){
   openModal();
 }
 function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}
-document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams()}));
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams();if(b.dataset.tab==="community")loadCommunity()}));
 document.getElementById("listenerSearch").addEventListener("input",searchListeners);
 document.getElementById("quickListenerSearch").addEventListener("keydown",e=>{
   if(e.key==="Enter")quickSearchListener();
