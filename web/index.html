@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>愛野まりあ YouTube Analytics</title>
+<style>
+:root{--navy:#24324a;--blue:#5470c6;--pink:#e97c9d;--bg:#f3f5f8;--card:#fff;--line:#dfe4ea;--text:#263238;--muted:#667085}
+*{box-sizing:border-box}body{margin:0;font-family:"Yu Gothic","Meiryo",sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--navy);color:white;padding:22px 28px;position:sticky;top:0;z-index:10}
+header h1{margin:0;font-size:24px}header p{margin:5px 0 0;opacity:.8}
+nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}nav button{border:0;border-radius:20px;padding:9px 15px;cursor:pointer;background:#ffffff22;color:white}nav button.active{background:white;color:var(--navy)}
+main{max-width:1280px;margin:0 auto;padding:24px}.section{display:none}.section.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--card);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);padding:18px;margin-bottom:18px}
+.kpi{font-size:32px;font-weight:bold;margin-top:8px}.muted{color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#e8edf5;position:sticky;top:0}.table-wrap{overflow:auto;max-height:620px}
+.bar-row{display:grid;grid-template-columns:140px 1fr 70px;align-items:center;gap:10px;margin:10px 0}.bar{background:#e8edf5;border-radius:8px;overflow:hidden;height:16px}.bar>div{height:100%;background:var(--blue)}
+.search{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+.link-button{border:0;background:none;color:#2f5eb7;cursor:pointer;padding:0;text-align:left}
+.badge{display:inline-block;background:#eef2ff;color:#364fc7;border-radius:15px;padding:4px 9px;font-size:12px}
+.status{display:inline-block;border-radius:15px;padding:5px 10px;font-size:12px;font-weight:bold}
+.status-new{background:#e5f6ea;color:#2e7d32}.status-return{background:#fff0d9;color:#a15c00}.status-active{background:#e8edff;color:#3451b2}.status-dormant{background:#ffe4e4;color:#a12a2a}.status-low{background:#eee;color:#555}
+.score{font-size:34px;font-weight:bold;color:#9d365a}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:100;padding:24px}.modal.open{display:flex;align-items:center;justify-content:center}.modal-content{background:white;width:min(1000px,100%);max-height:90vh;overflow:auto;border-radius:16px;padding:22px}.close{float:right;border:0;background:#eee;border-radius:50%;width:34px;height:34px;cursor:pointer}
+.chart{width:100%;height:260px;background:#fafbfc;border:1px solid var(--line);border-radius:12px}.chart text{font-size:11px;fill:#667085}.chart .axis{stroke:#cfd6df;stroke-width:1}.chart .line-a{fill:none;stroke:#5470c6;stroke-width:3}.chart .line-b{fill:none;stroke:#e97c9d;stroke-width:3}
+.type{display:inline-block;padding:6px 10px;border-radius:16px;background:#ffeaf1;color:#9d365a;font-weight:bold}
+@media(max-width:900px){.grid,.two{grid-template-columns:1fr}.bar-row{grid-template-columns:100px 1fr 60px}}
+</style>
+</head>
+<body>
+<header>
+<h1>愛野まりあ YouTube Analytics</h1>
+<p>コメント参加者ベースのローカル分析アプリ v0.5</p>
+<nav>
+<button data-tab="dashboard" class="active">ダッシュボード</button>
+<button data-tab="listeners">リスナー検索</button>
+<button data-tab="categories">企画分析</button>
+<button data-tab="streams">配信一覧</button>
+</nav>
+</header>
+
+<main>
+<section id="dashboard" class="section active">
+<div id="kpis" class="grid"></div>
+<div class="two">
+<div class="card"><h2>直近30配信・参加人数</h2><div id="participantsChart"></div></div>
+<div class="card"><h2>直近30配信・コメント数</h2><div id="commentsChart"></div></div>
+</div>
+<div class="two">
+<div class="card"><h2>常連TOP10</h2><div id="topListeners"></div></div>
+<div class="card"><h2>企画別・平均参加人数</h2><div id="categoryBars"></div></div>
+</div>
+<div class="card"><h2>曜日別分析</h2><div id="weekdayTable"></div></div>
+</section>
+
+<section id="listeners" class="section">
+<div class="card"><h2>リスナー検索</h2><input id="listenerSearch" class="search" placeholder="表示名またはチャンネルIDを入力"><p class="muted">ファンスコアもここで確認できます。</p></div>
+<div class="card"><div id="listenerResults"></div></div>
+</section>
+
+<section id="categories" class="section"><div class="card"><h2>企画別分析</h2><div id="categoryTable"></div></div></section>
+<section id="streams" class="section"><div class="card"><h2>最近の配信</h2><div id="streamTable"></div></div></section>
+</main>
+
+<div id="detailModal" class="modal"><div class="modal-content"><button class="close" onclick="closeModal()">×</button><div id="detailBody"></div></div></div>
+
+<script>
+async function api(path){const r=await fetch(path,{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"通信エラー");return d}
+function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+function table(h,rows){return `<div class="table-wrap"><table><thead><tr>${h.map(x=>`<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`}
+function lineChart(rows,key,klass,labelKey="stream_date"){
+  if(!rows.length)return "<p>データなし</p>";
+  const vals=rows.map(r=>Number(r[key]||0)), labels=rows.map(r=>r[labelKey]||"");
+  const w=700,h=240,p=30,max=Math.max(...vals,1);
+  const pts=vals.map((v,i)=>{const x=p+(w-p*2)*(i/Math.max(vals.length-1,1));const y=h-p-(h-p*2)*(v/max);return `${x},${y}`}).join(" ");
+  const labs=labels.map((d,i)=>i%Math.max(1,Math.floor(labels.length/6))===0?`<text x="${p+(w-p*2)*(i/Math.max(vals.length-1,1))}" y="${h-8}" text-anchor="middle">${esc(String(d).slice(5))}</text>`:"").join("");
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><line class="axis" x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}"/><line class="axis" x1="${p}" y1="${p}" x2="${p}" y2="${h-p}"/><polyline class="${klass}" points="${pts}"/>${labs}<text x="5" y="${p}">${max}</text><text x="12" y="${h-p}">0</text></svg>`;
+}
+function statusClass(status){
+  if(status==="新規")return "status-new";
+  if(status==="復帰")return "status-return";
+  if(status==="継続中")return "status-active";
+  if(status==="休眠候補")return "status-dormant";
+  return "status-low";
+}
+async function loadDashboard(){
+  const [s,c,w,streams]=await Promise.all([api("/api/summary"),api("/api/categories"),api("/api/weekdays"),api("/api/streams?limit=30")]);
+  const ordered=[...streams].reverse();
+  document.getElementById("kpis").innerHTML=[["配信数",s.total_streams],["リスナー数",s.total_listeners],["総コメント数",s.total_comments.toLocaleString()],["30日以上コメントなし",s.inactive_30]].map(([l,v])=>`<div class="card"><div class="muted">${l}</div><div class="kpi">${v}</div></div>`).join("");
+  document.getElementById("participantsChart").innerHTML=lineChart(ordered,"participants","line-a");
+  document.getElementById("commentsChart").innerHTML=lineChart(ordered,"comments","line-b");
+  document.getElementById("topListeners").innerHTML=table(["順位","表示名","参加配信","コメント"],s.top_listeners.map((r,i)=>`<tr><td>${i+1}</td><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td><td>${r.stream_count}</td><td>${r.comment_count}</td></tr>`));
+  const max=Math.max(...c.map(r=>r.avg_participants||0),1);
+  document.getElementById("categoryBars").innerHTML=c.map(r=>`<div class="bar-row"><div>${esc(r.category)}</div><div class="bar"><div style="width:${((r.avg_participants||0)/max)*100}%"></div></div><div>${r.avg_participants??0}</div></div>`).join("");
+  document.getElementById("weekdayTable").innerHTML=table(["曜日","配信数","平均参加人数","平均コメント"],w.map(r=>`<tr><td>${esc(r.weekday)}曜日</td><td>${r.stream_count}</td><td>${r.avg_participants}</td><td>${r.avg_comments}</td></tr>`));
+}
+async function loadCategories(){const rows=await api("/api/categories");document.getElementById("categoryTable").innerHTML=table(["企画","配信数","平均参加人数","平均コメント","最高参加人数","最高コメント"],rows.map(r=>`<tr><td><span class="badge">${esc(r.category)}</span></td><td>${r.stream_count}</td><td>${r.avg_participants}</td><td>${r.avg_comments}</td><td>${r.max_participants}</td><td>${r.max_comments}</td></tr>`))}
+async function loadStreams(){const rows=await api("/api/streams?limit=100");document.getElementById("streamTable").innerHTML=table(["日付","曜日","企画","タイトル","参加人数","コメント"],rows.map(r=>`<tr><td>${esc(r.stream_date)}</td><td>${esc(r.weekday)}</td><td><span class="badge">${esc(r.category)}</span></td><td><button class="link-button" onclick="openStream('${encodeURIComponent(r.video_id)}')">${esc(r.title)}</button></td><td>${r.participants}</td><td>${r.comments}</td></tr>`))}
+let timer;async function searchListeners(){clearTimeout(timer);timer=setTimeout(async()=>{const q=document.getElementById("listenerSearch").value.trim(),rows=await api(`/api/listeners?q=${encodeURIComponent(q)}`);document.getElementById("listenerResults").innerHTML=table(["表示名","参加配信","参加率","総コメント","ファンスコア","初参加","最終参加"],rows.map(r=>`<tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td><td>${r.stream_count}</td><td>${(r.participation_rate*100).toFixed(1)}%</td><td>${r.comment_count}</td><td>${r.fan_score}</td><td>${esc(r.first_seen_date)}</td><td>${esc(r.last_seen_date)}</td></tr>`))},250)}
+async function openListener(idEnc){
+  const d=await api(`/api/listener/${idEnc}`),p=d.profile;
+  const monthly=[...d.monthly];
+  document.getElementById("detailBody").innerHTML=`<h2>${esc(p.display_name)}</h2>
+  <p><span class="type">${esc(p.listener_type)}</span> <span class="status ${statusClass(p.status)}">${esc(p.status)}</span></p>
+  <p class="muted">${esc(p.channel_id)}</p>
+  <div class="grid">
+    <div class="card"><div class="muted">参加配信数</div><div class="kpi">${p.stream_count}</div></div>
+    <div class="card"><div class="muted">参加率</div><div class="kpi">${(p.participation_rate*100).toFixed(1)}%</div></div>
+    <div class="card"><div class="muted">総コメント</div><div class="kpi">${p.comment_count}</div></div>
+    <div class="card"><div class="muted">ファンスコア</div><div class="score">${p.fan_score}</div><div class="muted">100点満点</div></div>
+  </div>
+  <div class="card"><h3>月別参加推移</h3>${lineChart(monthly,"stream_count","line-a","month")}</div>
+  <div class="two">
+    <div class="card"><h3>ライフサイクル</h3>
+      <p>初参加：<strong>${esc(p.first_seen_date)}</strong></p>
+      <p>最終参加：<strong>${esc(p.last_seen_date)}</strong></p>
+      <p>最終参加から：<strong>${p.days_absent ?? "-"}日</strong></p>
+      <p>活動月数：<strong>${p.active_months}</strong></p>
+      <p>平均コメント：<strong>${p.avg_comments}</strong></p>
+    </div>
+    <div class="card"><h3>表示名履歴</h3>${table(["表示名","初回","最終"],d.names.map(r=>`<tr><td>${esc(r.display_name)}</td><td>${esc(r.first_seen_date)}</td><td>${esc(r.last_seen_date)}</td></tr>`))}</div>
+  </div>
+  <div class="card"><h3>最近参加した配信</h3>${table(["日付","企画","タイトル","コメント"],d.recent_streams.map(r=>`<tr><td>${esc(r.stream_date)}</td><td>${esc(r.category)}</td><td>${esc(r.title)}</td><td>${r.comment_count}</td></tr>`))}</div>`;
+  openModal();
+}
+async function openStream(idEnc){
+  const d=await api(`/api/stream/${idEnc}`),s=d.stream;
+  document.getElementById("detailBody").innerHTML=`<h2>${esc(s.title)}</h2><p><span class="badge">${esc(s.category)}</span> ${esc(s.stream_date)} ${esc(s.weekday)}曜日</p>
+  <div class="grid"><div class="card"><div class="muted">参加人数</div><div class="kpi">${d.stats.participants}</div></div><div class="card"><div class="muted">コメント数</div><div class="kpi">${d.stats.comments}</div></div><div class="card"><div class="muted">新規人数</div><div class="kpi">${d.new_listeners.length}</div></div><div class="card"><div class="muted">動画ID</div><div style="font-weight:bold;margin-top:12px">${esc(s.video_id)}</div></div></div>
+  <div class="two"><div class="card"><h3>コメント数TOP10</h3>${table(["表示名","コメント"],d.top_commenters.map(r=>`<tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td><td>${r.comment_count}</td></tr>`))}</div>
+  <div class="card"><h3>その日が初参加の人</h3>${d.new_listeners.length?table(["表示名"],d.new_listeners.map(r=>`<tr><td><button class="link-button" onclick="openListener('${encodeURIComponent(r.channel_id)}')">${esc(r.display_name)}</button></td></tr>`)):"<p>該当なし</p>"}</div></div>`;
+  openModal();
+}
+function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams()}));
+document.getElementById("listenerSearch").addEventListener("input",searchListeners);document.getElementById("detailModal").addEventListener("click",e=>{if(e.target.id==="detailModal")closeModal()});
+loadDashboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+﻿VTuber Analytics v0.2 修正版
+
+原因
+・WindowsのバッチファイルがUTF-8日本語を文字化けさせた
+・コピー先によっては src フォルダの位置がずれた
+
+修正手順
+1. このZIPを解凍します。
+2. 中にあるファイルと src フォルダを、
+   VTuberAnalytics_AinoMaria_v0.1 フォルダへコピーします。
+3. 同名ファイルは上書きします。
+4. 7_v0.2_update_fixed.bat を実行します。
+5. 成功後、8_open_dashboard_fixed.bat を実行します。
+
+正しい配置
+VTuberAnalytics_AinoMaria_v0.1
+├ 7_v0.2_update_fixed.bat
+├ 8_open_dashboard_fixed.bat
+├ config_categories.json
+├ src
+│  ├ upgrade_v02.py
+│  ├ classify_streams.py
+│  └ generate_reports_v02.py
+├ data
+└ reports
