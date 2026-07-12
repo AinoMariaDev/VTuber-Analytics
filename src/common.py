@@ -11,16 +11,60 @@ PARENT_DIR = PROJECT_DIR.parent
 DATA_DIR = PROJECT_DIR / "data"
 REPORT_DIR = PROJECT_DIR / "reports"
 DB_PATH = DATA_DIR / "vtuber_analytics.db"
-CHAT_DIR = PARENT_DIR / "youtube_chat_data"
 CONFIG_PATH = PROJECT_DIR / "config.json"
+APP_CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
+
+def resolve_chat_dir() -> Path:
+    candidates: list[Path] = []
+    if APP_CONFIG_PATH.exists():
+        try:
+            with APP_CONFIG_PATH.open("r", encoding="utf-8") as f:
+                app_config = json.load(f)
+            configured = str(app_config.get("chat_data_dir", "")).strip()
+            if configured:
+                candidates.append(Path(configured).expanduser())
+        except Exception:
+            pass
+
+    candidates.extend([
+        PROJECT_DIR / "youtube_chat_data",
+        PARENT_DIR / "youtube_chat_data",
+    ])
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+CHAT_DIR = resolve_chat_dir()
 
 FILE_RE = re.compile(
     r"^(?P<date>\d{4}-\d{2}-\d{2})_(?P<video_id>[^_]+)_(?P<title>.*)\.live_chat\.json$"
 )
 
 def load_config() -> dict[str, Any]:
-    with CONFIG_PATH.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    """Load current local app settings, with legacy config fallback."""
+    if APP_CONFIG_PATH.exists():
+        try:
+            with APP_CONFIG_PATH.open("r", encoding="utf-8") as f:
+                app_config = json.load(f)
+            return {
+                "channel_name": app_config.get("channel_name", "VTuber"),
+                "owner_channel_ids": app_config.get("owner_channel_ids", []),
+                "inactive_days": int(app_config.get("inactive_days", 30)),
+            }
+        except Exception:
+            pass
+
+    if CONFIG_PATH.exists():
+        with CONFIG_PATH.open("r", encoding="utf-8") as f:
+            return json.load(f)
+
+    return {
+        "channel_name": "VTuber",
+        "owner_channel_ids": [],
+        "inactive_days": 30,
+    }
 
 def connect() -> sqlite3.Connection:
     DATA_DIR.mkdir(exist_ok=True)

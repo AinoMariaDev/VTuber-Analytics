@@ -1,0 +1,13 @@
+﻿VTuber Analyticsへようこそ
+
+初めて使う場合は、次の順番で進めてください。
+
+1. 1_初期設定.bat
+2. 2_チャット取得.bat
+3. 3_データ更新.bat
+4. 4_Webアプリ起動.bat
+
+Webアプリを開いたら、まず「ホーム」の今日の分析を確認してください。
+
+Analyze. Understand. Improve.
+Created & Designed by Aino Maria

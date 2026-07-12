@@ -1,10 +1,6 @@
 @echo off
 cd /d "%~dp0"
 
-if not exist "app_config.local.json" (
-  py "src\first_run_setup.py"
-)
-
 py "src\health_check.py"
 if errorlevel 1 (
   echo.

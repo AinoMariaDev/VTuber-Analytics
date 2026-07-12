@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>愛野まりあ YouTube Analytics</title>
+<title>VTuber Analytics</title>
 <style>
 :root{--navy:#24324a;--blue:#5470c6;--pink:#e97c9d;--bg:#f3f5f8;--card:#fff;--line:#dfe4ea;--text:#263238;--muted:#667085}
 *{box-sizing:border-box}body{margin:0;font-family:"Yu Gothic","Meiryo",sans-serif;background:var(--bg);color:var(--text)}
@@ -102,24 +102,80 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 
 @media(max-width:900px){.grid,.two{grid-template-columns:1fr}.bar-row{grid-template-columns:100px 1fr 60px}}
 
+
+.settings-gear{
+  position:absolute;right:24px;top:22px;
+  border:0;background:#ffffff22;color:white;
+  width:42px;height:42px;border-radius:50%;
+  font-size:22px;cursor:pointer
+}
+.settings-gear:hover{background:#ffffff33}
+.readonly-input{background:#eef1f5!important;color:#667085!important;cursor:not-allowed}
+.theme-presets{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.theme-swatch{width:34px;height:34px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 1px #ccd3dd;cursor:pointer}
+
+
+html,body,button,input,select,textarea,table{
+  font-family:"Meiryo","Yu Gothic UI","Yu Gothic",sans-serif!important;
+}
+.page-intro{background:#f7f9fc;border-left:4px solid var(--blue);padding:12px 14px;border-radius:10px;margin-bottom:14px}
+.page-intro strong{display:block;margin-bottom:4px}
+.welcome-overlay{position:fixed;inset:0;background:rgba(18,27,44,.72);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}
+.welcome-card{width:min(680px,95vw);background:white;border-radius:18px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.3)}
+.welcome-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+.welcome-step{background:#f5f7fb;border-radius:12px;padding:14px}
+.welcome-step strong{display:block;font-size:18px;margin-bottom:6px}
+.welcome-actions{display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.about-card{background:#f7f9fc;border-radius:12px;padding:16px}
+.about-tagline{font-size:22px;font-weight:bold;color:var(--navy)}
+.empty-state{padding:28px;text-align:center;color:var(--muted);background:#fafbfc;border-radius:12px}
+@media(max-width:800px){.welcome-steps,.about-grid{grid-template-columns:1fr}}
+
+.toast-container{position:fixed;right:20px;bottom:20px;display:grid;gap:10px;z-index:11000}
+.toast{min-width:260px;max-width:420px;padding:13px 16px;border-radius:11px;color:white;box-shadow:0 12px 35px rgba(0,0,0,.22)}
+.toast-success{background:#2f855a}
+.toast-error{background:#b64242}
+.toast-warning{background:#b7791f}
+.setup-alert{background:#fff2d8;border-left:5px solid #d68a14;padding:16px;border-radius:11px;margin:0 auto 16px;max-width:880px}
+
+/* コミュニティ所見の最終調整 */
+#communityNotes{
+  margin-top:12px;
+}
+#communityNotes ul{
+  margin:0;
+  padding-left:24px;
+}
+#communityNotes li{
+  line-height:1.9;
+  margin-bottom:14px;
+}
+#communityNotes li:last-child{
+  margin-bottom:0;
+}
+
 </style>
 </head>
 <body>
 <header>
+<button id="aboutButton" class="settings-gear" style="right:76px" title="このアプリについて" aria-label="このアプリについて">ⓘ</button>
+<button id="settingsGear" class="settings-gear" title="設定" aria-label="設定">⚙</button>
 <h1 id="appTitle">VTuber Analytics</h1>
 <p id="appSubtitle">Powered by Aino Maria</p>
 <nav>
-<button data-tab="dashboard" class="active">ダッシュボード</button>
-<button data-tab="listeners">リスナー検索</button>
-<button data-tab="categories">企画分析</button>
-<button data-tab="streams">配信一覧</button>
-<button data-tab="community">コミュニティ</button>
-<button data-tab="moderation">モデレーション</button>
+<button data-tab="dashboard" class="active">🏠 ホーム</button>
+<button data-tab="listeners">👥 リスナー</button>
+<button data-tab="categories">📊 企画分析</button>
+<button data-tab="streams">🎥 配信</button>
+<button data-tab="community">🌱 コミュニティ</button>
+<button data-tab="moderation">🛡 モデレーション</button>
+
 </nav>
 </header>
 
 <main>
-<section id="dashboard" class="section active">
+<section id="dashboard" class="section active"><div id="setupAlert"></div><div class="page-intro"><strong>ホーム</strong>最近の配信とコミュニティ全体の状態を最初に確認する画面です。</div>
 <div class="card">
 <div class="quick-search">
 <input id="quickListenerSearch" placeholder="リスナー名を入力して検索">
@@ -149,9 +205,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 <div class="card"><h2>曜日別分析</h2><div id="weekdayTable"></div></div>
 </section>
 
-<section id="listeners" class="section">
+<section id="listeners" class="section"><div class="page-intro"><strong>リスナー</strong>コメント参加者の参加率、コメント数、最近の活動を確認します。</div>
 <div class="card">
-<h2>リスナー検索</h2>
+<h2>👥 リスナー</h2>
 <input id="listenerSearch" class="search" placeholder="表示名またはチャンネルIDを入力">
 <div class="filters" id="listenerFilters">
 <button class="filter-btn active" data-filter="all">すべて</button>
@@ -166,10 +222,10 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 <div class="card"><div id="listenerResults"></div></div>
 </section>
 
-<section id="categories" class="section"><div class="card"><h2>企画別分析</h2><div id="categoryTable"></div></div></section>
-<section id="streams" class="section"><div class="card"><h2>最近の配信</h2><div id="streamTable"></div></div></section>
+<section id="categories" class="section"><div class="page-intro"><strong>企画分析</strong>企画ごとの参加人数とコメント数を比較します。</div><div class="card"><h2>企画別分析</h2><div id="categoryTable"></div></div></section>
+<section id="streams" class="section"><div class="page-intro"><strong>配信</strong>タイトルを押すと配信カルテが開きます。</div><div class="card"><h2>最近の配信</h2><div id="streamTable"></div></div></section>
 
-<section id="community" class="section">
+<section id="community" class="section"><div class="page-intro"><strong>コミュニティ</strong>活動率、定着率、休眠率など全体の流れを確認します。</div>
 <div class="card">
 <h2>コミュニティ健康度</h2>
 <div id="communityHealth"></div>
@@ -201,7 +257,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 </section>
 
 
-<section id="moderation" class="section">
+<section id="moderation" class="section"><div class="page-intro"><strong>モデレーション</strong>要確認候補を前後の文脈とともに確認します。</div>
 <div class="card">
 <h2>モデレーション確認</h2>
 <p class="muted">自動検知は「要確認候補」です。最終判断は必ず人が行ってください。</p>
@@ -232,6 +288,72 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 </div>
 </section>
 
+<section id="settings" class="section"><div class="page-intro"><strong>設定</strong>チャンネル情報、保存先、テーマカラーを変更します。</div>
+<div class="card">
+<h2>設定</h2>
+<p class="muted">ブランド表記は固定です。運用に必要な項目だけ変更できます。</p>
+
+<div class="settings-grid">
+<label>アプリ名
+<input id="settingAppName" class="search readonly-input" value="VTuber Analytics" readonly>
+</label>
+
+<label>Powered by
+<input id="settingPoweredBy" class="search readonly-input" value="Aino Maria" readonly>
+</label>
+
+<label>チャンネル名
+<input id="settingChannelName" class="search">
+</label>
+
+<label>本人のYouTubeチャンネルID
+<input id="settingOwnerIds" class="search" placeholder="複数の場合はカンマ区切り">
+</label>
+
+<label>ライブチャットJSON保存先
+<input id="settingChatDir" class="search">
+</label>
+
+<label>Webアプリのポート番号
+<input id="settingPort" class="search" type="number" min="1024" max="65535">
+</label>
+
+<label>テーマカラー
+<input id="settingThemeColor" class="search" type="color">
+<div class="theme-presets">
+<button class="theme-swatch" style="background:#24324A" onclick="setThemePreset('#24324A')" title="ネイビー"></button>
+<button class="theme-swatch" style="background:#5B4B8A" onclick="setThemePreset('#5B4B8A')" title="パープル"></button>
+<button class="theme-swatch" style="background:#A64D79" onclick="setThemePreset('#A64D79')" title="ローズ"></button>
+<button class="theme-swatch" style="background:#2F6F6D" onclick="setThemePreset('#2F6F6D')" title="ティール"></button>
+<button class="theme-swatch" style="background:#6B5B4B" onclick="setThemePreset('#6B5B4B')" title="ブラウン"></button>
+</div>
+</label>
+</div>
+
+<div style="margin-top:16px">
+<button class="primary-button" onclick="saveSettings()">設定を保存</button>
+<span id="settingsMessage" class="muted" style="margin-left:12px"></span>
+</div>
+</div>
+</section>
+<section id="about" class="section">
+<div class="card">
+<h2>VTuber Analyticsについて</h2>
+<p class="about-tagline">Analyze. Understand. Improve.</p>
+<p>YouTubeライブチャットから、配信とコミュニティの変化を振り返るローカル分析ツールです。</p>
+<div class="about-grid">
+<div class="about-card"><strong>製品名</strong><p>VTuber Analytics</p></div>
+<div class="about-card">
+  <strong>バージョン</strong>
+  <p>1.0.0</p>
+</div>
+<div class="about-card"><strong>Created & Designed by</strong><p>Aino Maria</p></div>
+<div class="about-card"><strong>ライセンス</strong><p>MIT License</p></div>
+</div>
+<div class="report-section report-action"><strong>このツールの考え方</strong>
+<p>数字で人を評価するのではなく、変化を見つけ、次の配信を考えるための判断材料を増やします。</p></div>
+</div>
+</section>
 </main>
 
 <div id="detailModal" class="modal"><div class="modal-content"><button class="close" onclick="closeModal()">×</button><div id="detailBody"></div></div></div>
@@ -498,7 +620,7 @@ async function loadModeration(){
   const rows=await api(`/api/moderation?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}&limit=300`);
 
   if(!rows.length){
-    document.getElementById("moderationResults").innerHTML="<p>該当する要確認コメントはありません。</p>";
+    document.getElementById("moderationResults").innerHTML="<div class=\"empty-state\"><strong>要確認コメントはありません</strong><br>現在の条件では確認が必要な候補は見つかりませんでした。</div>";
     return;
   }
 
@@ -597,6 +719,43 @@ async function saveModerationReview(messageIdEnc){
   loadModeration();
 }
 
+function applyTheme(color){
+  const safeColor=/^#[0-9A-Fa-f]{6}$/.test(color)?color:"#24324A";
+  document.documentElement.style.setProperty("--navy",safeColor);
+}
+function setThemePreset(color){
+  document.getElementById("settingThemeColor").value=color;
+  applyTheme(color);
+}
+async function loadSettings(){
+  const d=await api("/api/settings");
+  settingAppName.value=d.app_name||"";
+  settingPoweredBy.value=d.powered_by||"";
+  settingChannelName.value=d.channel_name||"";
+  settingOwnerIds.value=(d.owner_channel_ids||[]).join(",");
+  settingChatDir.value=d.chat_data_dir||"";
+  settingPort.value=d.port||8765;
+  settingThemeColor.value=d.theme_color||"#24324A";
+}
+async function saveSettings(){
+  const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    channel_name:settingChannelName.value,
+    owner_channel_ids:settingOwnerIds.value,
+    chat_data_dir:settingChatDir.value,
+    port:Number(settingPort.value),
+    theme_color:settingThemeColor.value
+  })});
+  const d=await r.json();
+  if(r.ok){
+    applyTheme(settingThemeColor.value);
+    settingsMessage.textContent="保存しました。";
+    showToast("設定を保存しました。","success");
+  }else{
+    const message=friendlyErrorText(d.error||"保存に失敗しました。");
+    settingsMessage.textContent=message;
+    showToast(message,"error");
+  }
+}
 async function openListener(idEnc){
   const d=await api(`/api/listener/${idEnc}`),p=d.profile;
   const monthly=[...d.monthly];
@@ -702,8 +861,18 @@ async function openStream(idEnc){
   openModal();
 }
 function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}
-document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams();if(b.dataset.tab==="community")loadCommunity();if(b.dataset.tab==="moderation")loadModeration()}));
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams();if(b.dataset.tab==="community")loadCommunity();if(b.dataset.tab==="moderation")loadModeration();if(b.dataset.tab==="settings")loadSettings()}));
+document.getElementById("aboutButton").addEventListener("click",openAbout);
+document.getElementById("settingsGear").addEventListener("click",()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
+  document.getElementById("settings").classList.add("active");
+  loadSettings();
+});
 document.getElementById("listenerSearch").addEventListener("input",searchListeners);
+document.getElementById("settingThemeColor").addEventListener("input",e=>{
+  applyTheme(e.target.value);
+});
 document.getElementById("moderationSearch").addEventListener("input",scheduleModerationLoad);
 document.getElementById("moderationStatusFilter").addEventListener("change",loadModeration);
 document.getElementById("moderationCategoryFilter").addEventListener("change",loadModeration);
@@ -717,21 +886,94 @@ document.querySelectorAll("#listenerFilters .filter-btn").forEach(btn=>btn.addEv
   renderListeners();
 }));document.getElementById("detailModal").addEventListener("click",e=>{if(e.target.id==="detailModal")closeModal()});
 
+function showSection(sectionId){
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
+  document.getElementById(sectionId).classList.add("active");
+}
+function openAbout(){showSection("about");}
+function closeWelcome(){
+  if(document.getElementById("hideWelcomeNext").checked){
+    localStorage.setItem("vtuberAnalyticsHideWelcome","1");
+  }
+  document.getElementById("welcomeOverlay").style.display="none";
+}
+function maybeShowWelcome(){
+  if(localStorage.getItem("vtuberAnalyticsHideWelcome")!=="1"){
+    document.getElementById("welcomeOverlay").style.display="flex";
+  }
+}
+function showToast(message,type="success"){
+  const box=document.getElementById("toastContainer");
+  if(!box)return;
+  const toast=document.createElement("div");
+  toast.className=`toast toast-${type}`;
+  toast.textContent=message;
+  box.appendChild(toast);
+  setTimeout(()=>toast.remove(),3000);
+}
+
+function friendlyErrorText(value){
+  const text=String(value||"");
+  if(text.includes("not found")) return "必要な機能が見つかりません。Webアプリを再起動して、Ctrl + F5を押してください。";
+  if(text.includes("Failed to fetch")) return "Webアプリと通信できません。黒い画面が起動しているか確認してください。";
+  return text || "処理に失敗しました。";
+}
+
 async function loadAppInfo(){
   try{
     const info=await api("/api/app-info");
     document.getElementById("appTitle").textContent=info.app_name;
     document.getElementById("appSubtitle").textContent=`Powered by ${info.powered_by} / v${info.version}`;
     document.getElementById("footerBrand").textContent=`${info.app_name} - Powered by ${info.powered_by}`;
-  }catch(e){}
+    applyTheme(info.theme_color||"#24324A");
+
+    const alerts=[];
+    if(!info.config_ready){
+      alerts.push("初期設定が未完了です。右上の⚙から本人のチャンネルIDを設定してください。");
+    }
+    if(!info.database_exists){
+      alerts.push("分析データがありません。2_チャット取得.bat、3_データ更新.batの順に実行してください。");
+    }else if(info.stream_count===0){
+      alerts.push("配信データが0件です。チャット取得後にデータ更新を実行してください。");
+    }
+
+    const setupAlert=document.getElementById("setupAlert");
+    if(setupAlert){
+      setupAlert.innerHTML=alerts.length
+        ? `<div class="setup-alert"><strong>最初に確認してください</strong><ul>${alerts.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`
+        : "";
+    }
+  }catch(e){
+    applyTheme("#24324A");
+  }
 }
 loadAppInfo();
 loadDashboard();
+maybeShowWelcome();
 </script>
 
 <footer style="text-align:center;padding:24px;color:#667085">
   <div id="footerBrand">VTuber Analytics - Powered by Aino Maria</div>
-  <div>Release Candidate 0.9.0-rc1</div>
+  <div>Analyze. Understand. Improve.</div><div>Version 1.0.0</div>
 </footer>
+<div id="welcomeOverlay" class="welcome-overlay">
+<div class="welcome-card">
+<h2>VTuber Analyticsへようこそ</h2>
+<p>ライブチャットから、配信とコミュニティの変化を確認できます。</p>
+<div class="welcome-steps">
+<div class="welcome-step"><strong>1. 取得</strong>配信後にライブチャットを取得します。</div>
+<div class="welcome-step"><strong>2. 更新</strong>データ更新BATで分析データを反映します。</div>
+<div class="welcome-step"><strong>3. 確認</strong>ホームから最近の変化を確認します。</div>
+</div>
+<div class="report-section report-good"><strong>最初に見る場所</strong>
+<p>まずはホームの「今日の分析」を確認し、次に気になる配信やリスナーを開いてください。</p></div>
+<div class="welcome-actions">
+<label><input id="hideWelcomeNext" type="checkbox"> 次回から表示しない</label>
+<button class="primary-button" onclick="closeWelcome()">始める</button>
+</div>
+</div>
+</div>
+<div id="toastContainer" class="toast-container"></div>
 </body>
 </html>

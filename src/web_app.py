@@ -17,7 +17,6 @@ DB_PATH = PROJECT_DIR / "data" / "vtuber_analytics.db"
 INDEX_PATH = PROJECT_DIR / "web" / "index.html"
 HOST = "127.0.0.1"
 PORT = 8765
-OWNER_CHANNEL_IDS = {"UCbPtcsXkPLLiOySGZJW92gw"}
 
 APP_CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
 APP_CONFIG_EXAMPLE_PATH = PROJECT_DIR / "app_config.example.json"
@@ -25,8 +24,10 @@ APP_CONFIG_EXAMPLE_PATH = PROJECT_DIR / "app_config.example.json"
 DEFAULT_APP_CONFIG = {
     "app_name": "VTuber Analytics",
     "powered_by": "Aino Maria",
-    "channel_name": "Aino Maria",
-    "owner_channel_ids": ["UCbPtcsXkPLLiOySGZJW92gw"],
+    "channel_name": "",
+"owner_channel_ids": ["YOUR_YOUTUBE_CHANNEL_ID"],
+    "chat_data_dir": str(PROJECT_DIR / "youtube_chat_data"),
+    "theme_color": "#24324A",
     "host": "127.0.0.1",
     "port": 8765
 }
@@ -43,6 +44,16 @@ def load_app_config() -> dict[str, Any]:
     except Exception:
         data = DEFAULT_APP_CONFIG.copy()
     return data
+
+
+def configured_owner_channel_ids() -> set[str]:
+    config = load_app_config()
+    values = config.get("owner_channel_ids", [])
+    result = {str(value).strip() for value in values if str(value).strip()}
+    return result or {"YOUR_YOUTUBE_CHANNEL_ID"}
+
+
+OWNER_CHANNEL_IDS = configured_owner_channel_ids()
 
 
 MODERATION_RULES_PATH = PROJECT_DIR / "moderation_rules.local.json"
@@ -347,7 +358,7 @@ def get_categories() -> list[dict[str, Any]]:
         rows = conn.execute(
             f"""
             SELECT
-                COALESCE(s.category, 'その他') AS category,
+                CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END AS category,
                 COUNT(DISTINCT s.video_id) AS stream_count,
                 ROUND(AVG(x.participants), 1) AS avg_participants,
                 ROUND(AVG(x.comments), 1) AS avg_comments,
@@ -366,7 +377,7 @@ def get_categories() -> list[dict[str, Any]]:
                 FROM messages
                 GROUP BY video_id
             ) x ON x.video_id = s.video_id
-            GROUP BY COALESCE(s.category, 'その他')
+            GROUP BY CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END
             ORDER BY avg_participants DESC, avg_comments DESC
             """,
             owner_params * 2,
@@ -420,7 +431,7 @@ def get_recent_streams(limit: int = 30) -> list[dict[str, Any]]:
                 s.stream_date,
                 s.video_id,
                 s.title,
-                COALESCE(s.category, 'その他') AS category,
+                CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END AS category,
                 COALESCE(s.weekday, '') AS weekday,
                 COUNT(DISTINCT CASE
                     WHEN m.channel_id NOT IN ({owner_ph}) THEN m.channel_id
@@ -667,7 +678,7 @@ def get_stream(video_id: str) -> dict[str, Any] | None:
                 FROM messages
                 GROUP BY video_id
             ) x ON x.video_id = s.video_id
-            WHERE COALESCE(s.category, 'その他') = ?
+            WHERE CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END = ?
             """,
             (*owner_params, *owner_params, stream["category"]),
         ).fetchone()
@@ -875,7 +886,7 @@ def get_listener(channel_id: str) -> dict[str, Any] | None:
                 s.stream_date,
                 s.video_id,
                 s.title,
-                COALESCE(s.category, 'その他') AS category,
+                CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END AS category,
                 COUNT(m.message_id) AS comment_count
             FROM streams s
             JOIN messages m ON m.video_id = s.video_id
@@ -1187,23 +1198,47 @@ def get_community_analysis() -> dict[str, Any]:
 
         notes: list[str] = []
         if active_rate >= 0.6:
-            notes.append("直近30日で活動しているリスナー比率が高く、現在のコミュニティは活発です。")
+            notes.append(
+                "直近30日の活動率はかなり良好です。今の運用は機能しています。"
+                "ただし、常連だけで回っていないか、新規の定着も合わせて確認してください。"
+            )
         elif active_rate >= 0.35:
-            notes.append("直近30日の活動率は中程度です。定期企画や告知導線を保つ価値があります。")
+            notes.append(
+                "活動率は悪くありませんが、『順調』と言い切るには弱い数字です。"
+                "配信頻度、告知時刻、定番企画の再現性を見直す余地があります。"
+            )
         else:
-            notes.append("直近30日の活動率は低めです。復帰しやすい企画や告知の再設計が候補です。")
+            notes.append(
+                "活動率は正直かなり低めです。配信を続けるだけでは戻りません。"
+                "初見が入りやすい説明、次回予告、定期企画の固定化から立て直してください。"
+            )
 
         if retention_rate >= 0.6:
-            notes.append("初参加後に翌月以降も戻る割合が高く、定着は良好です。")
+            notes.append(
+                "初参加者の定着は強いです。初見を置いていかない空気が作れています。"
+                "この良さを崩さず、常連同士だけの内輪化には注意してください。"
+            )
         elif retention_rate >= 0.35:
-            notes.append("定着率は中程度です。初参加者への次回案内を強める余地があります。")
+            notes.append(
+                "定着率は中間です。来てくれた人を逃してはいませんが、"
+                "次も来る理由を十分に作れているとも言えません。次回予定を明確にしましょう。"
+            )
         else:
-            notes.append("初参加後の定着率は低めです。初見向け説明や次回予告を見直す候補です。")
+            notes.append(
+                "初見が一度きりで終わる割合が高めです。"
+                "配信内容よりも、初見への案内・参加方法・次回導線に穴がある可能性があります。"
+            )
 
         if dormant_rate >= 0.4:
-            notes.append("60日以上コメントがないリスナー比率が高めです。")
+            notes.append(
+                "休眠率は高めです。『自然に戻ってくるだろう』は期待しない方がいいです。"
+                "久しぶりでも入りやすい企画や、過去参加者にも届く告知を検討してください。"
+            )
         elif dormant_rate <= 0.2:
-            notes.append("長期休眠の割合は比較的低く抑えられています。")
+            notes.append(
+                "長期休眠は比較的少なく、コミュニティの維持力があります。"
+                "今の距離感を守りつつ、固定メンバー依存にならないよう新規導線も残してください。"
+            )
 
     return {
         "health_score": health_score,
@@ -1282,6 +1317,8 @@ def get_moderation_candidates(
         if q and q not in item["display_name"].casefold() and q not in item["message_text"].casefold():
             continue
         if status_filter and item["review_status"] != status_filter:
+            continue
+        if not status_filter and item["review_status"] == "問題なし":
             continue
         effective_category = item["review_category"] or item["detected_category"]
         if category_filter and effective_category != category_filter:
@@ -1470,15 +1507,111 @@ def export_moderation_csv() -> bytes:
 
 def get_app_info() -> dict[str, Any]:
     config = load_app_config()
+    database_exists = DB_PATH.exists()
+    stream_count = 0
+
+    if database_exists:
+        try:
+            with connect() as conn:
+                stream_count = conn.execute(
+                    "SELECT COUNT(*) AS c FROM streams"
+                ).fetchone()["c"]
+        except Exception:
+            database_exists = False
+
+    owner_ids = [
+        str(value).strip()
+        for value in config.get("owner_channel_ids", [])
+        if str(value).strip()
+    ]
+    config_ready = bool(
+        config.get("channel_name")
+        and owner_ids
+        and owner_ids != ["YOUR_YOUTUBE_CHANNEL_ID"]
+    )
+
     return {
-        "version": "0.9.0-rc1",
+       print("VTuber Analytics Web App v1.0.0")
         "app_name": config.get("app_name", "VTuber Analytics"),
         "powered_by": config.get("powered_by", "Aino Maria"),
         "channel_name": config.get("channel_name", "Aino Maria"),
-        "database_exists": DB_PATH.exists(),
+        "theme_color": config.get("theme_color", "#24324A"),
+        "database_exists": database_exists,
         "database_path": str(DB_PATH),
+        "stream_count": stream_count,
+        "config_ready": config_ready,
         "moderation_rules_exists": MODERATION_RULES_PATH.exists(),
     }
+
+def public_app_config() -> dict[str, Any]:
+    config = load_app_config()
+    return {
+        "app_name": "VTuber Analytics",
+        "powered_by": "Aino Maria",
+        "channel_name": str(config.get("channel_name", "Aino Maria")),
+        "owner_channel_ids": list(config.get("owner_channel_ids", [])),
+        "chat_data_dir": str(config.get(
+            "chat_data_dir",
+            PROJECT_DIR / "youtube_chat_data",
+        )),
+        "theme_color": str(config.get("theme_color", "#24324A")),
+        "host": str(config.get("host", "127.0.0.1")),
+        "port": int(config.get("port", 8765)),
+    }
+
+def save_app_config(payload: dict[str, Any]) -> dict[str, Any]:
+    current = load_app_config()
+
+    channel_name = str(
+        payload.get("channel_name", current.get("channel_name", "Aino Maria"))
+    ).strip()
+    chat_data_dir = str(
+        payload.get(
+            "chat_data_dir",
+            current.get("chat_data_dir", PROJECT_DIR / "youtube_chat_data"),
+        )
+    ).strip()
+    theme_color = str(
+        payload.get("theme_color", current.get("theme_color", "#24324A"))
+    ).strip()
+
+    owner_raw = payload.get(
+        "owner_channel_ids",
+        current.get("owner_channel_ids", []),
+    )
+    if isinstance(owner_raw, str):
+        owner_ids = [v.strip() for v in owner_raw.split(",") if v.strip()]
+    else:
+        owner_ids = [str(v).strip() for v in owner_raw if str(v).strip()]
+
+    if not channel_name:
+        raise ValueError("チャンネル名を入力してください。")
+    if not owner_ids:
+        raise ValueError("本人のYouTubeチャンネルIDを入力してください。")
+    if not re.fullmatch(r"#[0-9A-Fa-f]{6}", theme_color):
+        raise ValueError("テーマカラーは #RRGGBB 形式で入力してください。")
+
+    port = int(payload.get("port", current.get("port", 8765)))
+    if not 1024 <= port <= 65535:
+        raise ValueError("ポート番号は1024から65535で入力してください。")
+
+    config = {
+        "app_name": "VTuber Analytics",
+        "powered_by": "Aino Maria",
+        "channel_name": channel_name,
+        "owner_channel_ids": owner_ids,
+        "chat_data_dir": chat_data_dir,
+        "theme_color": theme_color,
+        "host": "127.0.0.1",
+        "port": port,
+    }
+
+    APP_CONFIG_PATH.write_text(
+        json.dumps(config, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    Path(chat_data_dir).expanduser().mkdir(parents=True, exist_ok=True)
+    return {"ok": True, "config": public_app_config()}
 
 class Handler(BaseHTTPRequestHandler):
     def send_json(self, value: Any, status: int = 200) -> None:
@@ -1526,6 +1659,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_html()
             elif path == "/api/app-info":
                 self.send_json(get_app_info())
+            elif path == "/api/settings":
+                self.send_json(public_app_config())
             elif path == "/api/summary":
                 self.send_json(get_summary())
             elif path == "/api/categories":
@@ -1591,6 +1726,9 @@ class Handler(BaseHTTPRequestHandler):
                     memo=str(payload.get("memo", "")),
                 )
                 self.send_json(result)
+            elif path == "/api/settings":
+                payload = self.read_json_body()
+                self.send_json(save_app_config(payload))
             else:
                 self.send_json({"error": "not found"}, 404)
         except Exception as exc:
@@ -1612,7 +1750,7 @@ def main() -> None:
     port = int(config.get("port", PORT))
 
     server = ThreadingHTTPServer((host, port), Handler)
-    print("VTuber Analytics Web App v0.9.0-rc1")
+    print("VTuber Analytics Web App v1.0.0")
     print(f"Open: http://{host}:{port}")
     print("Press Ctrl+C to stop.")
 
