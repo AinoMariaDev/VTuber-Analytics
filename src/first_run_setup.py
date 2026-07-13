@@ -41,7 +41,7 @@ def main() -> None:
     print("「@○○」のハンドル名やチャンネルURLではありません。")
     print()
     print("確認場所:")
-    print("YouTube → 右上のプロフィール画像 → 設定 → 詳細設定 → チャンネルID")
+    print("YouTube Studio → 設定 → チャンネル → 詳細設定 → チャンネルID")
     print()
     print("入力例: UCbPtcsXkPLLiOySGZJW92gw")
     owner_channel_id = ask_required(

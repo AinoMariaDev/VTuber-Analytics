@@ -1750,7 +1750,7 @@ def main() -> None:
     port = int(config.get("port", PORT))
 
     server = ThreadingHTTPServer((host, port), Handler)
-    print("VTuber Analytics Web App v1.0.1")
+    print("VTuber Analytics Web App v1.0.0")
     print(f"Open: http://{host}:{port}")
     print("Press Ctrl+C to stop.")
 

@@ -26,9 +26,3 @@
 - Added privacy-focused `.gitignore`
 - Excluded local settings, databases, reports, backups, and chat data
 - Added security and contribution documentation
-
-## [1.0.1] - 2026-07-13
-
-### Fixed
-- 本人のYouTubeチャンネルID確認手順を修正
-- 初期設定画面、設定画面、READMEの案内文を更新
