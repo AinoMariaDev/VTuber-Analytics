@@ -1,4 +1,4 @@
-# VTuber Analytics v1.0.0
+# VTuber Analytics v1.0.1
 
 **Analyze. Understand. Improve.**
 
