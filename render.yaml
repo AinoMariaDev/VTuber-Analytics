@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: vtuber-analytics
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    autoDeploy: false
+    disk:
+      name: vtuber-analytics-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: VTA_SERVER_MODE
+        value: "1"
+      - key: VTA_DATA_DIR
+        value: /var/data
+      - key: PYTHONUTF8
+        value: "1"
+      - key: PYTHONIOENCODING
+        value: utf-8

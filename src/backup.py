@@ -4,13 +4,9 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-BACKUP_DIR = PROJECT_DIR / "backups"
-TARGETS = [
-    PROJECT_DIR / "data" / "vtuber_analytics.db",
-    PROJECT_DIR / "app_config.local.json",
-    PROJECT_DIR / "moderation_rules.local.json",
-]
+from storage_paths import BACKUP_DIR, CONFIG_PATH, DB_PATH, MODERATION_RULES_PATH
+
+TARGETS = [DB_PATH, CONFIG_PATH, MODERATION_RULES_PATH]
 
 def main() -> None:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")

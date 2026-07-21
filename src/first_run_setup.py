@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
+from storage_paths import CHAT_DIR, CONFIG_PATH, PROJECT_DIR
+
 
 
 def ask_required(label: str, example: str = "") -> str:
@@ -50,7 +50,7 @@ def main() -> None:
     )
     print()
 
-    default_chat_dir = str(PROJECT_DIR / "youtube_chat_data")
+    default_chat_dir = str(CHAT_DIR)
     print("【ライブチャットJSONの保存フォルダ】")
     print("通常は変更不要です。Enterを押すと既定の保存先を使用します。")
     chat_data_dir = ask_optional(

@@ -1,30 +1,208 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>VTuber Analytics</title>
 <style>
-:root{--navy:#24324a;--blue:#5470c6;--pink:#e97c9d;--bg:#f3f5f8;--card:#fff;--line:#dfe4ea;--text:#263238;--muted:#667085}
-*{box-sizing:border-box}body{margin:0;font-family:"Yu Gothic","Meiryo",sans-serif;background:var(--bg);color:var(--text)}
-header{background:var(--navy);color:white;padding:22px 28px;position:sticky;top:0;z-index:10}
-header h1{margin:0;font-size:24px}header p{margin:5px 0 0;opacity:.8}
-nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}nav button{border:0;border-radius:20px;padding:9px 15px;cursor:pointer;background:#ffffff22;color:white}nav button.active{background:white;color:var(--navy)}
-main{max-width:1280px;margin:0 auto;padding:24px}.section{display:none}.section.active{display:block}
+:root{--navy:#24324a;--blue:#5470c6;--pink:#e97c9d;--bg:#f3f6fa;--card:#fff;--line:#dfe5ee;--text:#202936;--muted:#667085;--soft:#eef3f9;--shadow:0 10px 30px rgba(36,50,74,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;font-family:"Yu Gothic","Meiryo",sans-serif;background:linear-gradient(180deg,#eef3f9 0,#f6f8fb 260px,var(--bg) 100%);color:var(--text);min-height:100vh}button,input,select,textarea{transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease,background .18s ease}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(84,112,198,.22);outline-offset:2px}
+header{background:linear-gradient(120deg,var(--navy),#344967);color:white;padding:18px 28px 0;position:sticky;top:0;z-index:50;box-shadow:0 8px 28px rgba(23,32,51,.2)}
+.header-brand{max-width:1380px;margin:0 auto;position:relative;padding-right:108px}
+header h1{margin:0;font-size:25px;letter-spacing:.02em}header p{margin:4px 0 0;opacity:.76;font-size:13px}
+.nav-toggle{display:none;border:1px solid #ffffff44;background:#ffffff18;color:white;border-radius:10px;padding:8px 11px;font-size:18px;cursor:pointer}
+nav{max-width:1380px;margin:15px auto 0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+nav button{position:relative;flex:0 0 auto;border:0;border-radius:10px 10px 0 0;padding:11px 15px 13px;cursor:pointer;background:transparent;color:#e8edf6;font-weight:700;white-space:nowrap}
+nav button:hover{background:#ffffff13;color:white}nav button.active{background:var(--bg);color:var(--navy);box-shadow:0 -1px 0 #ffffff55}
+nav button.active:after{content:"";position:absolute;left:18px;right:18px;bottom:5px;height:3px;border-radius:3px;background:var(--blue)}
+main{max-width:1380px;margin:0 auto;padding:26px 28px 48px}.section{display:none;animation:sectionFade .18s ease}.section.active{display:block}@keyframes sectionFade{from{opacity:.45;transform:translateY(4px)}to{opacity:1;transform:none}}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.card{background:var(--card);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);padding:18px;margin-bottom:18px}
+.card{background:rgba(255,255,255,.96);border:1px solid rgba(214,222,233,.9);border-radius:16px;box-shadow:var(--shadow);padding:20px;margin-bottom:18px}.card h2{margin:0 0 14px;font-size:18px;letter-spacing:.01em}.card h3{margin-top:0}
 .kpi{font-size:32px;font-weight:bold;margin-top:8px}.muted{color:var(--muted)}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#e8edf5;position:sticky;top:0}.table-wrap{overflow:auto;max-height:620px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;font-variant-numeric:tabular-nums}th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;line-height:1.5}th{background:#eaf0f7;position:sticky;top:0;color:#344054;font-size:13px;font-weight:800;letter-spacing:.02em;z-index:3;white-space:nowrap}tbody tr:nth-child(even) td{background:#fbfcfe}tbody tr:hover td{background:#f0f5ff}tbody tr:last-child td{border-bottom:0}th:first-child,td:first-child{position:sticky;left:0;z-index:2}th:first-child{z-index:4;background:#eaf0f7}tbody tr:nth-child(odd) td:first-child{background:#fff}tbody tr:nth-child(even) td:first-child{background:#fbfcfe}tbody tr:hover td:first-child{background:#f0f5ff}td:first-child{font-weight:700;color:#24324a;box-shadow:1px 0 0 var(--line)}.table-wrap{position:relative;overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(36,50,74,.06);scrollbar-color:#aebbd0 #eef2f7;overscroll-behavior:contain}.table-wrap:focus-within{box-shadow:0 0 0 3px rgba(84,112,198,.14),0 8px 24px rgba(36,50,74,.06)}.table-wrap table{min-width:760px}.table-wrap::-webkit-scrollbar{height:11px;width:11px}.table-wrap::-webkit-scrollbar-thumb{background:#aebbd0;border-radius:999px;border:3px solid #eef2f7}.table-wrap::-webkit-scrollbar-track{background:#eef2f7}
 .bar-row{display:grid;grid-template-columns:140px 1fr 70px;align-items:center;gap:10px;margin:10px 0}.bar{background:#e8edf5;border-radius:8px;overflow:hidden;height:16px}.bar>div{height:100%;background:var(--blue)}
-.search{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+.search{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:11px;font-size:16px;background:#fbfcfe}.search:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(84,112,198,.12)}
 .link-button{border:0;background:none;color:#2f5eb7;cursor:pointer;padding:0;text-align:left}
-.badge{display:inline-block;background:#eef2ff;color:#364fc7;border-radius:15px;padding:4px 9px;font-size:12px}
+.table-wrap .link-button{font-weight:700;text-decoration:none;border-bottom:1px dashed rgba(47,94,183,.35)}.table-wrap .link-button:hover{color:#1f4f9f;border-bottom-color:currentColor}.table-wrap .badge{white-space:nowrap;box-shadow:inset 0 0 0 1px rgba(36,50,74,.06)}.badge{display:inline-block;background:#eef2ff;color:#364fc7;border-radius:15px;padding:4px 9px;font-size:12px}
 .status{display:inline-block;border-radius:15px;padding:5px 10px;font-size:12px;font-weight:bold}
 .status-new{background:#e5f6ea;color:#2e7d32}.status-return{background:#fff0d9;color:#a15c00}.status-active{background:#e8edff;color:#3451b2}.status-dormant{background:#ffe4e4;color:#a12a2a}.status-low{background:#eee;color:#555}
 .score{font-size:34px;font-weight:bold;color:#9d365a}
+
+
+
+
+
+/* Mobile / tablet final adjustments */
+html,body{max-width:100%;overflow-x:hidden}
+img,canvas,svg{max-width:100%}
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+.table-wrap table{min-width:760px}
+.table-wrap th,.table-wrap td{white-space:nowrap}
+.page-intro,.card{overflow-wrap:anywhere}
+button,input,select,textarea{max-width:100%}
+button,.weekly-button,.primary-button,.secondary-button,.link-button,.export-link{touch-action:manipulation}
+input,select,textarea{font-size:16px}
+.nav-button{min-height:42px}
+.card{min-width:0}
+.dashboard-grid,.metric-grid,.diagnostic-grid,.settings-grid,.weekly-grid{min-width:0}
+.mod-card,.listener-card,.stream-card{min-width:0}
+.mod-message,.moderation-comment,.diagnostic-row strong{overflow-wrap:anywhere;word-break:break-word}
+.weekly-day-card textarea{min-height:92px}
+.weekly-day-card select,.weekly-day-card input{width:100%}
+.weekly-actions,.stream-filter-actions,.moderation-toolbar-actions,.diagnostics-actions,.backup-actions{align-items:stretch}
+.weekly-actions>*,.stream-filter-actions>*,.moderation-toolbar-actions>*,.diagnostics-actions>*,.backup-actions>*{min-height:42px}
+@media(max-width:1024px){
+  .app-shell{grid-template-columns:210px minmax(0,1fr)}
+  main{padding:18px}
+  .card{padding:16px}
+  .dashboard-grid,.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .settings-grid{grid-template-columns:1fr}
+  .weekly-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .moderation-toolbar-improved{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .moderation-toolbar-improved .export-link{display:flex;align-items:center;justify-content:center}
+}
+@media(max-width:760px){
+  .app-shell{display:block}
+  aside{position:sticky;top:0;z-index:20;width:auto;max-height:none;border-right:0;border-bottom:1px solid var(--line);padding:10px 12px;background:rgba(255,255,255,.97);backdrop-filter:blur(8px)}
+  .brand{margin-bottom:8px}
+  nav{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+  .nav-button{flex:0 0 auto;width:auto;padding:9px 12px;white-space:nowrap}
+  main{padding:12px}
+  .page-header{align-items:flex-start;gap:10px}
+  .page-header h1{font-size:22px}
+  .page-intro{padding:12px 14px}
+  .card{padding:14px;border-radius:12px}
+  .dashboard-grid,.metric-grid,.diagnostics-summary,.diagnostic-grid,.settings-grid,.weekly-grid{grid-template-columns:1fr}
+  .stream-filter-grid,.moderation-toolbar,.moderation-toolbar-improved,.listener-search-grid{grid-template-columns:1fr}
+  .stream-filter-actions,.moderation-toolbar-actions,.diagnostics-actions,.weekly-actions,.backup-actions{display:grid;grid-template-columns:1fr}
+  .stream-filter-actions .weekly-button,.moderation-toolbar-actions .weekly-button,.moderation-toolbar-improved .weekly-button,.moderation-toolbar-improved .export-link,.diagnostics-actions .weekly-button,.diagnostics-actions .primary-button,.diagnostics-actions .secondary-button,.weekly-actions .weekly-button,.backup-actions button{width:100%;box-sizing:border-box;text-align:center}
+  .moderation-head,.stream-result-summary,.moderation-result-summary,.diagnostic-result-summary{align-items:flex-start}
+  .mod-meta{display:grid;grid-template-columns:1fr;gap:5px}
+  .moderation-actions{display:grid;grid-template-columns:1fr}
+  .moderation-actions .weekly-button{width:100%}
+  .diagnostic-row{grid-template-columns:1fr;gap:4px}
+  .table-wrap table{min-width:680px}
+  .ui-state{min-height:120px;padding:22px 14px}
+}
+@media(max-width:480px){
+  aside{padding:8px}
+  .brand strong{font-size:14px}
+  .brand span{font-size:11px}
+  main{padding:8px}
+  .page-header h1{font-size:20px}
+  .page-intro,.card{border-radius:10px}
+  .card{padding:12px}
+  h2{font-size:17px}
+  .weekly-day-card{padding:12px}
+  .weekly-day-card textarea{min-height:82px}
+  .table-wrap table{min-width:620px}
+  .listener-filter-field label,.stream-filter-field label,.moderation-filter-field label{font-size:11px}
+  .diagnostic-kpi strong{font-size:15px}
+}
+.ui-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:150px;padding:28px 18px;border:1px dashed var(--line);border-radius:12px;background:#fbfcfe;text-align:center;color:var(--muted)}
+.ui-state.compact{min-height:90px;padding:20px 14px}
+.ui-state-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#edf2f8;color:#42577b;font-size:20px;font-weight:800}
+.ui-state-title{color:#24324a;font-size:15px;font-weight:800}
+.ui-state-detail{max-width:640px;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.ui-state.loading .ui-state-icon{background:#eaf0ff}
+.ui-state.error{border-color:#efc4c4;background:#fff8f8}
+.ui-state.error .ui-state-icon{background:#fde7e7;color:#a43f3f}
+.ui-state.empty .ui-state-icon{background:#eef2f7;color:#667085}
+.ui-state-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.ui-spinner{width:20px;height:20px;border:3px solid #cdd8eb;border-top-color:#425f99;border-radius:50%;animation:ui-spin .8s linear infinite}
+@keyframes ui-spin{to{transform:rotate(360deg)}}
+.moderation-toolbar-improved{display:grid;grid-template-columns:minmax(220px,1.4fr) repeat(2,minmax(170px,.8fr)) auto auto auto;gap:10px;align-items:center}
+.moderation-result-summary{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:13px}
+.moderation-result-summary strong{color:#24324a;font-size:15px}
+.mod-card{border-left-width:5px}
+.mod-card.status-unreviewed{border-left-color:#d69e2e}
+.mod-card.status-safe{border-left-color:#46a36b;background:#f8fdf9}
+.mod-card.status-handled{border-left-color:#5978b8;background:#f7f9fd}
+.moderation-empty{padding:34px 18px;text-align:center;border:1px dashed var(--line);border-radius:12px;background:#fbfcfe;color:var(--muted)}
+@media(max-width:1100px){.moderation-toolbar-improved{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.moderation-toolbar-improved{grid-template-columns:1fr}.moderation-toolbar-improved .weekly-button,.moderation-toolbar-improved .export-link{width:100%;box-sizing:border-box;text-align:center}}
+
+
+
+.dashboard-wide-card{grid-column:1/-1}
+.top-listeners-commentary{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+.top-listeners-commentary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.top-listeners-note{border:1px solid var(--line);border-radius:11px;padding:12px;background:#f8fafc}
+.top-listeners-note strong{display:block;margin-bottom:6px;color:#24324a;font-size:14px}
+.top-listeners-note p{margin:0;color:#475467;font-size:13px;line-height:1.65}
+.top-listeners-note.good{border-left:4px solid #4d9a69}
+.top-listeners-note.caution{border-left:4px solid #d39336}
+.top-listeners-note.action{border-left:4px solid #5875ad}
+@media(max-width:850px){.top-listeners-commentary-grid{grid-template-columns:1fr}}
+.action-analysis{display:grid;gap:14px}
+.action-analysis-header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.action-analysis-header h2{margin:0}
+.action-analysis-date{font-size:12px;color:var(--muted);font-weight:700}
+.action-analysis-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:12px}
+.action-block{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+.action-block h3{margin:0 0 9px;font-size:15px;color:#24324a}
+.action-block p{margin:7px 0;line-height:1.75}
+.action-block ul,.action-block ol{margin:7px 0 0;padding-left:20px}
+.action-block li{margin:7px 0;line-height:1.65}
+.action-block.primary{border-left:5px solid #506da4;background:#f7f9fd}
+.action-block.good{border-left:5px solid #4d9a69;background:#f8fdf9}
+.action-block.caution{border-left:5px solid #d39336;background:#fffaf2}
+.action-block.next{border-left:5px solid #8a68c2;background:#fbf9ff}
+.action-priority{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;background:#24324a;color:#fff;font-size:12px;font-weight:800}
+
+.listener-back-guide{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.listener-back-guide[hidden]{display:none!important}
+@media(max-width:620px){.listener-back-guide{display:grid;grid-template-columns:1fr}.listener-back-guide .weekly-button{width:100%}}
+.listener-playbook{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.listener-playbook-card{appearance:none;width:100%;border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff;text-align:left;cursor:pointer;transition:.15s ease;color:inherit}
+.listener-playbook-card:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(36,50,74,.10);border-color:#9aa9c1}
+.listener-playbook-card:focus-visible{outline:3px solid rgba(70,100,160,.28);outline-offset:2px}
+.listener-playbook-head{display:flex;justify-content:space-between;align-items:center;gap:9px}
+.listener-playbook-head strong{font-size:16px}
+.listener-playbook-count{font-size:22px;font-weight:900;color:#24324a}
+.listener-playbook-label{margin-top:9px;font-size:12px;font-weight:800;color:#62708a}
+.listener-playbook-text{margin-top:6px;font-size:13px;line-height:1.65;color:#475467}
+.listener-playbook-action{margin-top:10px;font-size:12px;font-weight:800;color:#45649c}
+.analysis-footnote{font-size:12px;color:var(--muted);line-height:1.6}
+@media(max-width:980px){.action-analysis-grid{grid-template-columns:1fr}.listener-playbook{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.listener-playbook{grid-template-columns:1fr}}
+.metadata-action-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.metadata-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.metadata-status-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc}
+.metadata-status-card span{display:block;color:var(--muted);font-size:12px;font-weight:700}
+.metadata-status-card strong{display:block;margin-top:5px;font-size:18px;color:#24324a;overflow-wrap:anywhere}
+.metadata-note{margin-top:14px;border-left:4px solid #5875ad;border-radius:9px;background:#f4f7fc;padding:12px 14px}
+.metadata-note p{margin:6px 0 0;color:#475467;line-height:1.65}
+.category-tag-list{display:flex;gap:5px;flex-wrap:wrap}
+@media(max-width:800px){.metadata-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.metadata-status-grid{grid-template-columns:1fr}.metadata-action-row{display:grid;grid-template-columns:1fr}.metadata-action-row button{width:100%}}
+.stream-filter-panel{display:grid;gap:14px}
+.stream-filter-grid{display:grid;grid-template-columns:minmax(220px,1.4fr) repeat(2,minmax(150px,.8fr)) minmax(160px,.8fr);gap:10px;align-items:end}
+.stream-filter-field label{display:block;margin-bottom:5px;color:#475467;font-size:12px;font-weight:800}
+.stream-filter-field input,.stream-filter-field select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:#fff;font:inherit;color:var(--text)}
+.stream-filter-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stream-filter-check{display:inline-flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#f8fafc;font-size:13px;font-weight:700;color:#475467}
+.stream-filter-check input{width:auto}
+.stream-result-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:13px}
+.stream-result-summary strong{color:#24324a;font-size:15px}
+.stream-empty{padding:34px 18px;text-align:center;border:1px dashed var(--line);border-radius:12px;background:#fbfcfe;color:var(--muted)}
+@media(max-width:1050px){.stream-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.stream-filter-grid{grid-template-columns:1fr}.stream-filter-actions .weekly-button{width:100%}}
+.listener-search-panel{display:grid;gap:14px}
+.listener-search-main{display:grid;grid-template-columns:minmax(260px,1fr) auto;gap:10px;align-items:center}
+.listener-search-main .search{margin:0}
+.listener-advanced-filters{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr)) auto;gap:10px;align-items:end;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
+.listener-filter-field label{display:block;margin-bottom:5px;color:#475467;font-size:12px;font-weight:800}
+.listener-filter-field input,.listener-filter-field select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:#fff;font:inherit;color:var(--text)}
+.listener-filter-field input:focus,.listener-filter-field select:focus{outline:none;border-color:#7186c5;box-shadow:0 0 0 3px rgba(84,112,198,.12)}
+.listener-result-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:13px}
+.listener-result-summary strong{color:#24324a;font-size:15px}
+.listener-empty{padding:34px 18px;text-align:center;border:1px dashed var(--line);border-radius:12px;background:#fbfcfe;color:var(--muted)}
+@media(max-width:900px){.listener-advanced-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.listener-search-main{grid-template-columns:1fr}}
+@media(max-width:560px){.listener-advanced-filters{grid-template-columns:1fr}.listener-advanced-filters .weekly-button{width:100%}}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.filter-btn{border:1px solid var(--line);background:white;border-radius:18px;padding:7px 12px;cursor:pointer}
-.filter-btn.active{background:var(--navy);color:white;border-color:var(--navy)}
+.filter-btn{border:1px solid var(--line);background:white;border-radius:999px;padding:8px 13px;cursor:pointer;font-weight:700;color:#4a5568}.filter-btn:hover{border-color:#aab8cc;background:#f7f9fc}
+.filter-btn.active{background:var(--navy);color:white;border-color:var(--navy);box-shadow:0 5px 14px rgba(36,50,74,.2)}
 .participation-wrap{min-width:150px}
 .participation-bar{height:10px;background:#e8edf5;border-radius:8px;overflow:hidden;margin-bottom:5px}
 .participation-fill{height:100%;background:var(--blue)}
@@ -44,17 +222,17 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 .type{display:inline-block;padding:6px 10px;border-radius:16px;background:#ffeaf1;color:#9d365a;font-weight:bold}
 
 .dashboard-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px}
-.dashboard-card{background:white;border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);border-top:4px solid var(--blue)}
+.dashboard-card{background:linear-gradient(160deg,#fff,#fbfcff);border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:0 8px 24px rgba(36,50,74,.07);border-top:4px solid var(--blue);min-height:112px}.dashboard-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(36,50,74,.11)}
 .dashboard-card strong{display:block;font-size:28px;margin-top:7px}
 .dashboard-card.super{border-top-color:#4c956c}
 .dashboard-card.regular{border-top-color:#5470c6}
 .dashboard-card.new{border-top-color:#e6a23c}
 .dashboard-card.returning{border-top-color:#9b72cf}
 .dashboard-card.dormant{border-top-color:#c45656}
-.insight{border-left:5px solid var(--pink);background:#fff;padding:16px 18px;border-radius:12px;margin-bottom:18px}
-.quick-search{display:flex;gap:8px}
-.quick-search input{flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:10px}
-.quick-search button{border:0;background:var(--navy);color:white;border-radius:10px;padding:0 16px;cursor:pointer}
+.insight{border:1px solid #f1d7e0;border-left:5px solid var(--pink);background:linear-gradient(120deg,#fff,#fff8fb);padding:17px 19px;border-radius:14px;margin-bottom:18px;box-shadow:0 8px 22px rgba(180,70,110,.06)}
+.quick-search{display:flex;gap:9px}
+.quick-search input{flex:1;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:#fbfcfe}.quick-search input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(84,112,198,.12)}
+.quick-search button{border:0;background:var(--navy);color:white;border-radius:10px;padding:0 18px;cursor:pointer;font-weight:700}.quick-search button:hover{transform:translateY(-1px);background:#18253a}
 .mini-bars{display:grid;gap:9px}
 .mini-row{display:grid;grid-template-columns:100px 1fr 55px;gap:10px;align-items:center}
 .mini-track{height:13px;border-radius:7px;background:#e8edf5;overflow:hidden}
@@ -103,6 +281,66 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 @media(max-width:900px){.grid,.two{grid-template-columns:1fr}.bar-row{grid-template-columns:100px 1fr 60px}}
 
 
+
+.chat-progress-panel{margin-top:24px;padding:20px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#fff,#f7f9fd);box-shadow:0 10px 28px rgba(36,50,74,.07)}
+.chat-progress-panel h2{margin:0 0 6px}
+.chat-download-url-row{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:10px;align-items:end;margin-top:14px}
+.chat-download-url-row label{min-width:0}
+.chat-download-url-row input{width:100%;box-sizing:border-box}
+.chat-progress-box{margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:13px;background:#fff}
+.chat-progress-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.chat-progress-stat{padding:12px;border-radius:11px;background:#f3f6fb}
+.chat-progress-stat span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.chat-progress-stat strong{font-size:20px;color:#24324a;font-variant-numeric:tabular-nums}
+.chat-progress-track{height:12px;border-radius:999px;background:#e8edf5;overflow:hidden}
+.chat-progress-bar{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--theme),#7895db);transition:width .3s ease}
+.chat-progress-status{display:flex;justify-content:space-between;gap:12px;margin-top:9px;font-size:13px;color:var(--muted)}
+.chat-current-title{margin-top:13px;padding:11px 12px;border-radius:10px;background:#f7f9fc;overflow-wrap:anywhere}
+.chat-errors{margin-top:12px;border:1px solid #f2c7c7;border-radius:10px;background:#fff7f7;padding:11px 12px}
+.chat-errors summary{cursor:pointer;font-weight:800;color:#8a2d2d}
+.chat-errors pre,.chat-log pre{margin:9px 0 0;max-height:180px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.55 Consolas,"Courier New",monospace}
+.chat-log{margin-top:10px;border:1px solid var(--line);border-radius:10px;background:#fafbfc;padding:11px 12px}
+.chat-log summary{cursor:pointer;font-weight:700;color:#475467}
+.chat-progress-idle{color:var(--muted)}
+@media(max-width:820px){
+  .chat-download-url-row{grid-template-columns:1fr}
+  .chat-progress-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chat-download-url-row button{width:100%}
+}
+
+.diagnostics-panel{margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+.diagnostics-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.diagnostics-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+.diagnostic-kpi{border:1px solid var(--line);border-radius:12px;padding:13px;background:#f8fafc}
+.diagnostic-kpi span{display:block;color:var(--muted);font-size:12px;font-weight:700}
+.diagnostic-kpi strong{display:block;margin-top:5px;color:#24324a;font-size:17px;overflow-wrap:anywhere}
+.diagnostic-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.diagnostic-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+.diagnostic-card h3{margin:0 0 10px;font-size:15px}
+.diagnostic-row{display:grid;grid-template-columns:140px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid #eef2f7;font-size:13px}
+.diagnostic-row:last-child{border-bottom:0}
+.diagnostic-row span{color:var(--muted)}
+.diagnostic-row strong{overflow-wrap:anywhere}
+.diagnostic-status{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}
+.diagnostic-status.ok{background:#e8f6ed;color:#24613a}
+.diagnostic-status.warn{background:#fff4d8;color:#7a5700}
+.diagnostic-status.error{background:#fdeaea;color:#8a2d2d}
+.diagnostic-errors{margin-top:12px}
+.diagnostic-error-item{border-left:4px solid #d66b6b;background:#fff7f7;border-radius:9px;padding:10px 12px;margin-top:8px}
+.diagnostic-error-item strong{display:block;margin-bottom:4px}
+.diagnostic-error-item code{white-space:pre-wrap;overflow-wrap:anywhere}
+.diagnostic-raw{width:100%;box-sizing:border-box;min-height:220px;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:11px;font:12px/1.55 Consolas,monospace;background:#101827;color:#dbe7f7;resize:vertical}
+@media(max-width:980px){.diagnostics-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.diagnostic-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.diagnostics-summary{grid-template-columns:1fr}.diagnostic-row{grid-template-columns:1fr;gap:3px}.diagnostics-actions .weekly-button{width:100%}}
+.backup-panel{margin-top:18px;border-top:1px solid var(--line);padding-top:18px}
+.backup-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.backup-option{display:flex;gap:8px;align-items:center;font-weight:normal}
+.backup-option input{width:auto}
+.backup-file-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.backup-file-row input[type="file"]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.backup-list{display:grid;gap:8px;margin-top:14px}
+.backup-list-item{display:flex;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:#fafbfc}
+
 .settings-gear{
   position:absolute;right:24px;top:22px;
   border:0;background:#ffffff22;color:white;
@@ -118,8 +356,16 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 html,body,button,input,select,textarea,table{
   font-family:"Meiryo","Yu Gothic UI","Yu Gothic",sans-serif!important;
 }
-.page-intro{background:#f7f9fc;border-left:4px solid var(--blue);padding:12px 14px;border-radius:10px;margin-bottom:14px}
-.page-intro strong{display:block;margin-bottom:4px}
+.page-intro{position:relative;overflow:hidden;background:linear-gradient(120deg,#fff,#f3f7fd);border:1px solid var(--line);padding:18px 20px 17px 22px;border-radius:16px;margin-bottom:18px;box-shadow:0 8px 24px rgba(36,50,74,.06)}.page-intro:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(var(--blue),var(--pink))}.page-intro:after{content:"";position:absolute;width:130px;height:130px;border-radius:50%;right:-60px;top:-75px;background:rgba(84,112,198,.08)}
+.page-intro strong{display:block;margin-bottom:5px;font-size:21px;color:var(--navy)}
+.home-hero{display:grid;grid-template-columns:1.45fr .9fr;gap:18px;margin-bottom:18px}
+.home-hero-main{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--navy),#405d89);color:white;border-radius:18px;padding:24px 26px;box-shadow:0 15px 36px rgba(36,50,74,.22)}
+.home-hero-main:after{content:"";position:absolute;width:230px;height:230px;border-radius:50%;right:-85px;top:-100px;background:#ffffff12}
+.home-hero-main h2{margin:0 0 8px;font-size:25px}.home-hero-main p{margin:0;max-width:650px;color:#e7edf7;line-height:1.7}
+.home-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.home-shortcut{border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px;text-align:left;cursor:pointer;box-shadow:0 7px 20px rgba(36,50,74,.06);font-weight:700;color:var(--navy)}
+.home-shortcut span{display:block;font-size:22px;margin-bottom:7px}.home-shortcut small{display:block;margin-top:4px;color:var(--muted);font-weight:400;line-height:1.45}.home-shortcut:hover{transform:translateY(-2px);border-color:#b9c7dc;box-shadow:0 12px 26px rgba(36,50,74,.1)}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 13px}.section-heading h2{margin:0;font-size:18px}.section-heading span{color:var(--muted);font-size:13px}
 .welcome-overlay{position:fixed;inset:0;background:rgba(18,27,44,.72);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}
 .welcome-card{width:min(680px,95vw);background:white;border-radius:18px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.3)}
 .welcome-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
@@ -139,43 +385,176 @@ html,body,button,input,select,textarea,table{
 .toast-warning{background:#b7791f}
 .setup-alert{background:#fff2d8;border-left:5px solid #d68a14;padding:16px;border-radius:11px;margin:0 auto 16px;max-width:880px}
 
-/* コミュニティ所見の最終調整 */
-#communityNotes{
-  margin-top:12px;
+.weekly-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px}
+.weekly-toolbar-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.weekly-button{border:0;background:var(--navy);color:white;border-radius:9px;padding:10px 14px;cursor:pointer}
+.weekly-button.secondary{background:#e8edf5;color:var(--text)}
+.weekly-button.danger{background:#b64646;color:#fff}
+.weekly-range{font-size:18px;font-weight:bold}
+.weekly-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding-bottom:4px}
+.weekly-day{min-width:0;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.weekly-day h3{margin:0 0 10px;font-size:16px}
+.weekly-day .date{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.weekly-day input,.weekly-day textarea,.weekly-day select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit;background:#fff}
+.weekly-preset-row{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px}
+.weekly-preset-row select{width:100%;min-width:0;box-sizing:border-box;padding-right:34px}
+.weekly-preset-row button{width:100%;white-space:nowrap;padding:9px 12px}
+.weekly-day input,.weekly-day textarea{margin-top:8px}
+.weekly-day textarea{min-height:100px;resize:vertical}
+.weekly-message{min-height:24px;margin-top:12px}
+.weekly-preview{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.weekly-preview h2{margin:0 0 12px}
+.weekly-preview-grid{display:grid;grid-template-columns:repeat(7,minmax(135px,1fr));gap:10px;overflow-x:auto}
+.weekly-preview-day{min-width:135px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc}
+.weekly-preview-day.is-rest{background:#f1f3f6}
+.weekly-preview-date{font-size:12px;color:var(--muted);margin-bottom:7px}
+.weekly-preview-type{display:inline-block;font-size:12px;font-weight:bold;background:#e7edf6;border-radius:999px;padding:4px 8px;margin-bottom:8px}
+.weekly-preview-title{font-weight:bold;min-height:42px;white-space:pre-wrap;overflow-wrap:anywhere}
+.weekly-preview-note{font-size:12px;color:var(--muted);margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.weekly-diff{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.weekly-diff-list{display:grid;gap:10px;margin-top:12px}
+.weekly-diff-item{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+.weekly-diff-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.weekly-diff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700}
+.weekly-diff-badge.added{background:#e7f6ec;color:#24613a}
+.weekly-diff-badge.changed{background:#fff4d8;color:#7a5700}
+.weekly-diff-badge.rest{background:#eeeaf8;color:#56418a}
+.weekly-diff-badge.removed{background:#fdeaea;color:#8a2d2d}
+.weekly-diff-old{color:var(--muted);font-size:13px}
+.weekly-change-notice{margin-top:14px}
+.weekly-change-notice textarea{width:100%;box-sizing:border-box;min-height:220px;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;line-height:1.65;resize:vertical;background:#fff}
+.weekly-extra-fields{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.weekly-extra-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.weekly-extra-fields label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+.weekly-extra-fields textarea{width:100%;box-sizing:border-box;min-height:145px;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;line-height:1.6;resize:vertical;background:#fff}
+.weekly-post{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.weekly-post h2{margin:0 0 8px}
+.weekly-post textarea{width:100%;box-sizing:border-box;min-height:240px;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;line-height:1.7;resize:vertical;background:#fff}
+.weekly-post-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.weekly-image-export{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.weekly-template-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:12px 0}
+.weekly-template-controls label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
+.weekly-template-controls select{min-width:230px;border:1px solid var(--line);border-radius:8px;padding:9px 34px 9px 10px;font:inherit;background:#fff}
+.weekly-background-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.weekly-background-controls input[type="file"]{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.weekly-file-button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;border-radius:8px;padding:0 14px;background:#e9eef6;color:#172033;font-size:14px;font-weight:700;cursor:pointer}
+.weekly-file-button:hover{filter:brightness(.98)}
+.weekly-background-status{flex:1 1 240px;min-width:0;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.weekly-image-preview-wrap{margin-top:12px;overflow:auto;border:1px solid var(--line);border-radius:12px;background:#f8fafc;padding:12px}
+#weeklyScheduleCanvas{display:block;max-width:100%;height:auto;margin:0 auto;background:#fff;border-radius:8px}
+.weekly-ai-prompt{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}
+.weekly-ai-reference{display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:16px;align-items:start;margin-top:12px}
+.weekly-ai-reference img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.weekly-ai-prompt textarea{width:100%;box-sizing:border-box;min-height:360px;border:1px solid var(--line);border-radius:10px;padding:12px;font:inherit;line-height:1.65;resize:vertical;background:#fff}
+@media(max-width:1100px){.weekly-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:820px){.weekly-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.weekly-preview-grid{grid-template-columns:1fr}.weekly-day,.weekly-preview-day{min-width:0}.weekly-ai-reference,.weekly-extra-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.weekly-grid{grid-template-columns:1fr}}
+@media(max-width:760px){.table-wrap{max-height:70vh;border-radius:12px}.table-wrap::before{content:'横にスクロールできます →';position:sticky;left:0;display:block;width:max-content;margin:0;padding:8px 12px;color:#667085;font-size:12px;font-weight:700;background:linear-gradient(90deg,#fff 75%,rgba(255,255,255,0));z-index:5;pointer-events:none}.table-wrap table{min-width:680px}th,td{padding:11px 12px}
+  header{padding:14px 16px 0}.header-brand{padding-right:98px}header h1{font-size:21px}
+  .nav-toggle{display:block;position:absolute;right:94px;top:3px}nav{display:none;margin-top:13px;padding-bottom:12px;flex-wrap:wrap;overflow:visible}nav.open{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  nav button{border-radius:10px;padding:11px 10px;background:#ffffff10;text-align:left}nav button.active{border-radius:10px;background:white}nav button.active:after{display:none}
+  main{padding:18px 14px 36px}.home-hero{grid-template-columns:1fr}.home-shortcuts{grid-template-columns:1fr 1fr}.dashboard-grid{grid-template-columns:1fr 1fr}.quick-search{flex-direction:column}.quick-search button{min-height:42px}
+  .settings-gear{top:14px}.page-intro{padding:16px 17px 15px 19px}.page-intro strong{font-size:19px}
 }
-#communityNotes ul{
-  margin:0;
-  padding-left:24px;
-}
-#communityNotes li{
-  line-height:1.9;
-  margin-bottom:14px;
-}
-#communityNotes li:last-child{
-  margin-bottom:0;
-}
+@media(max-width:460px){nav.open{grid-template-columns:1fr}.home-shortcuts{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:1fr}.header-brand{padding-right:92px}.nav-toggle{right:88px}}
 
+@keyframes chatProgressPulse{0%,100%{transform:translateX(-20%);opacity:.55}50%{transform:translateX(250%);opacity:1}}
+
+.auth-overlay{position:fixed;inset:0;z-index:5000;background:rgba(20,28,42,.78);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-overlay[hidden]{display:none!important}
+.auth-card{width:min(460px,100%);background:#fff;border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:26px}
+.auth-card h2{margin:0 0 8px;color:#24324a}
+.auth-card p{color:#667085;line-height:1.65}
+.auth-field{display:grid;gap:6px;margin:13px 0}
+.auth-field label{font-size:13px;font-weight:800;color:#344054}
+.auth-field input{width:100%;padding:11px 12px;border:1px solid #ccd5e2;border-radius:10px;font:inherit}
+.auth-actions{display:flex;gap:10px;align-items:center;margin-top:18px}
+.auth-actions button{flex:1}
+.auth-error{min-height:22px;margin-top:10px;color:#b42318;font-size:13px;font-weight:700}
+.auth-user-box{position:absolute;right:106px;top:2px;display:flex;align-items:center;gap:7px}
+.auth-user-label{font-size:11px;color:#dce5f2;text-align:right;line-height:1.25}
+.auth-logout{border:1px solid #ffffff44;background:#ffffff18;color:white;border-radius:9px;padding:7px 9px;cursor:pointer;font-size:12px}
+body.auth-locked header,body.auth-locked main,body.auth-locked footer{filter:blur(2px);pointer-events:none;user-select:none}
+@media(max-width:760px){.auth-user-box{position:static;margin-top:9px;justify-content:flex-start}.header-brand{padding-right:108px}}
+
+.youtube-connect-panel{margin-top:18px;border:1px solid var(--line);border-radius:14px;padding:18px;background:#f8fafc}
+.youtube-connect-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.youtube-connect-grid label{display:grid;gap:6px;font-weight:800;font-size:13px;color:#344054}
+.youtube-connect-grid label.wide{grid-column:1/-1}
+.youtube-connect-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.youtube-status-box{margin-top:14px;border-radius:11px;padding:13px;background:#fff;border:1px solid var(--line)}
+.youtube-sync-result{margin-top:10px;line-height:1.7}
+@media(max-width:720px){.youtube-connect-grid{grid-template-columns:1fr}.youtube-connect-grid label.wide{grid-column:auto}.youtube-connect-actions{display:grid;grid-template-columns:1fr}.youtube-connect-actions button{width:100%}}
+
+.background-jobs-panel{margin-top:18px;border:1px solid var(--line);border-radius:14px;padding:18px;background:#f8fafc}
+.background-jobs-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.background-job-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px}
+.background-job-card h3{margin:0 0 9px;font-size:15px;color:#24324a}
+.background-job-card label{display:grid;gap:6px;margin-top:10px;font-size:12px;font-weight:800;color:#475467}
+.background-job-card input[type="number"]{width:100%;padding:9px;border:1px solid #ccd5e2;border-radius:9px}
+.background-job-status{font-size:12px;line-height:1.6;color:#667085}
+.background-job-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.background-history{margin-top:14px;overflow:auto}
+.background-history table{min-width:760px}
+.job-status-success{color:#027a48;font-weight:800}
+.job-status-error{color:#b42318;font-weight:800}
+.job-status-running{color:#175cd3;font-weight:800}
+@media(max-width:900px){.background-jobs-grid{grid-template-columns:1fr}.background-job-actions{display:grid;grid-template-columns:1fr}.background-job-actions button{width:100%}}
+
+.recovery-panel{margin-top:18px;border:1px solid var(--line);border-radius:14px;padding:18px;background:#f8fafc}
+.recovery-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.recovery-stat{border:1px solid var(--line);border-radius:11px;background:#fff;padding:12px}
+.recovery-stat span{display:block;color:#667085;font-size:12px;font-weight:800}
+.recovery-stat strong{display:block;margin-top:5px;color:#24324a;font-size:18px}
+.recovery-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+.recovery-history{overflow:auto;margin-top:12px}
+.recovery-history table{min-width:900px}
+.recovery-ok{color:#027a48;font-weight:800}
+.recovery-error{color:#b42318;font-weight:800}
+@media(max-width:850px){.recovery-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.recovery-actions{display:grid;grid-template-columns:1fr}.recovery-actions button{width:100%}}
+@media(max-width:520px){.recovery-summary{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
-<button id="aboutButton" class="settings-gear" style="right:76px" title="このアプリについて" aria-label="このアプリについて">ⓘ</button>
-<button id="settingsGear" class="settings-gear" title="設定" aria-label="設定">⚙</button>
+<div class="header-brand">
+<div id="authUserBox" class="auth-user-box" hidden>
+<div id="authUserLabel" class="auth-user-label"></div>
+<button type="button" class="auth-logout" onclick="logoutAuth()">ログアウト</button>
+</div>
+<button id="aboutButton" class="settings-gear" style="right:52px;top:3px" title="このアプリについて" aria-label="このアプリについて">ⓘ</button>
+<button id="settingsGear" class="settings-gear" style="right:0;top:3px" title="設定" aria-label="設定">⚙</button>
+<button id="navToggle" class="nav-toggle" type="button" aria-label="メニューを開閉" aria-expanded="false">☰</button>
 <h1 id="appTitle">VTuber Analytics</h1>
 <p id="appSubtitle">Powered by Aino Maria</p>
-<nav>
+</div>
+<nav id="mainNav">
 <button data-tab="dashboard" class="active">🏠 ホーム</button>
 <button data-tab="listeners">👥 リスナー</button>
 <button data-tab="categories">📊 企画分析</button>
 <button data-tab="streams">🎥 配信</button>
 <button data-tab="community">🌱 コミュニティ</button>
+<button data-tab="weekly-schedule">🗓 週間予定</button>
 <button data-tab="moderation">🛡 モデレーション</button>
 
 </nav>
 </header>
 
 <main>
-<section id="dashboard" class="section active"><div id="setupAlert"></div><div class="page-intro"><strong>ホーム</strong>最近の配信とコミュニティ全体の状態を最初に確認する画面です。</div>
+<section id="dashboard" class="section active"><div id="setupAlert"></div>
+<div class="home-hero">
+  <div class="home-hero-main">
+    <h2>配信とコミュニティの現在地</h2>
+    <p>最近の配信状況、リスナーの動き、コミュニティ全体の変化をまとめて確認できます。まずは上の数値を見て、気になる画面へ移動してください。</p>
+  </div>
+  <div class="home-shortcuts">
+    <button class="home-shortcut" data-open-tab="listeners"><span>👥</span>リスナーを見る<small>常連・新規・休眠候補を確認</small></button>
+    <button class="home-shortcut" data-open-tab="streams"><span>🎥</span>配信を見る<small>最近の配信とカルテを確認</small></button>
+    <button class="home-shortcut" data-open-tab="community"><span>🌱</span>健康度を見る<small>定着率や活動率を確認</small></button>
+    <button class="home-shortcut" data-open-tab="weekly-schedule"><span>🗓</span>予定を作る<small>週間予定と告知画像を作成</small></button>
+  </div>
+</div>
+<div class="section-heading"><h2>リスナーをすぐ検索</h2><span>表示名から詳細へ移動</span></div>
 <div class="card">
 <div class="quick-search">
 <input id="quickListenerSearch" placeholder="リスナー名を入力して検索">
@@ -186,6 +565,13 @@ html,body,button,input,select,textarea,table{
 <div id="dashboardCards" class="dashboard-grid"></div>
 
 <div id="dashboardInsight" class="insight"></div>
+
+<div class="card">
+<h2>リスナー区分別・攻略ガイド</h2>
+<p class="muted">人数だけでなく、次にどう接するかを表示します。カードを押すと該当リスナーへ移動します。</p>
+<div id="listenerPlaybook" class="listener-playbook"></div>
+<p class="analysis-footnote">区分は参加率・初回参加日・最終参加日を基準にしています。人柄の評価ではなく、配信参加状況を整理するための目安です。</p>
+</div>
 
 <div class="two">
 <div class="card"><h2>直近7配信・参加人数</h2><div id="recentParticipantsBars"></div></div>
@@ -198,32 +584,146 @@ html,body,button,input,select,textarea,table{
 </div>
 
 <div class="two">
-<div class="card"><h2>常連TOP10</h2><div id="topListeners"></div></div>
-<div class="card"><h2>企画別・平均参加人数</h2><div id="categoryBars"></div></div>
+<div class="card dashboard-wide-card">
+<h2>常連TOP10</h2>
+<p class="muted">コメント数だけでなく、参加配信数・最終参加日・参加率を見て、固定化や依存の偏りを確認します。</p>
+<div id="topListeners"></div>
+<div id="topListenersCommentary" class="top-listeners-commentary"></div>
+</div>
+
 </div>
 
 <div class="card"><h2>曜日別分析</h2><div id="weekdayTable"></div></div>
 </section>
 
 <section id="listeners" class="section"><div class="page-intro"><strong>リスナー</strong>コメント参加者の参加率、コメント数、最近の活動を確認します。</div>
+<div id="listenerBackToGuideWrap" class="listener-back-guide" hidden>
+  <button type="button" class="weekly-button secondary" onclick="backToListenerGuide()">← 攻略ガイドへ戻る</button>
+  <span id="listenerBackGuideLabel" class="muted"></span>
+</div>
 <div class="card">
 <h2>👥 リスナー</h2>
-<input id="listenerSearch" class="search" placeholder="表示名またはチャンネルIDを入力">
-<div class="filters" id="listenerFilters">
-<button class="filter-btn active" data-filter="all">すべて</button>
-<button class="filter-btn" data-filter="超常連">超常連</button>
-<button class="filter-btn" data-filter="常連">常連</button>
-<button class="filter-btn" data-filter="準常連">準常連</button>
-<button class="filter-btn" data-filter="新規">新規</button>
-<button class="filter-btn" data-filter="休眠候補">休眠候補</button>
+<div class="listener-search-panel">
+  <div class="listener-search-main">
+    <input id="listenerSearch" class="search" placeholder="表示名またはチャンネルIDを入力">
+    <button type="button" class="weekly-button secondary" onclick="resetListenerFilters()">検索条件をリセット</button>
+  </div>
+  <div class="filters" id="listenerFilters">
+    <button class="filter-btn active" data-filter="all">すべて</button>
+    <button class="filter-btn" data-filter="超常連">超常連</button>
+    <button class="filter-btn" data-filter="常連">常連</button>
+    <button class="filter-btn" data-filter="準常連">準常連</button>
+    <button class="filter-btn" data-filter="新規">新規</button>
+    <button class="filter-btn" data-filter="休眠候補">休眠候補</button>
+  </div>
+  <div class="listener-advanced-filters">
+    <div class="listener-filter-field">
+      <label for="listenerMinComments">最低コメント数</label>
+      <input id="listenerMinComments" type="number" min="0" step="1" placeholder="指定なし">
+    </div>
+    <div class="listener-filter-field">
+      <label for="listenerMinParticipation">最低参加率</label>
+      <select id="listenerMinParticipation">
+        <option value="0">指定なし</option>
+        <option value="0.1">10%以上</option>
+        <option value="0.25">25%以上</option>
+        <option value="0.5">50%以上</option>
+        <option value="0.75">75%以上</option>
+      </select>
+    </div>
+    <div class="listener-filter-field">
+      <label for="listenerLastSeen">最終参加</label>
+      <select id="listenerLastSeen">
+        <option value="all">指定なし</option>
+        <option value="7">7日以内</option>
+        <option value="30">30日以内</option>
+        <option value="60">60日以内</option>
+        <option value="90">90日以内</option>
+        <option value="dormant">60日以上前</option>
+      </select>
+    </div>
+    <button type="button" class="weekly-button secondary" onclick="renderListeners()">条件を適用</button>
+  </div>
 </div>
-<p class="muted">見出しをクリックすると並び替えできます。</p>
+<div class="listener-result-summary">
+  <span id="listenerResultCount">0人を表示</span>
+  <span>見出しをクリックすると並び替えできます。</span>
+</div>
 </div>
 <div class="card"><div id="listenerResults"></div></div>
 </section>
 
-<section id="categories" class="section"><div class="page-intro"><strong>企画分析</strong>企画ごとの参加人数とコメント数を比較します。</div><div class="card"><h2>企画別分析</h2><div id="categoryTable"></div></div></section>
-<section id="streams" class="section"><div class="page-intro"><strong>配信</strong>タイトルを押すと配信カルテが開きます。</div><div class="card"><h2>最近の配信</h2><div id="streamTable"></div></div></section>
+<section id="categories" class="section">
+<div class="page-intro"><strong>企画分析</strong>1配信に複数の企画タグを付け、友人戦・雑談・段位戦などを重複集計します。</div>
+<div class="card">
+<h2>企画タグの再分類・曜日再計算</h2>
+<p class="muted">既存の配信タイトルを再判定し、複合配信は複数タグとして集計します。配信日は曜日へ再変換します。</p>
+<div class="metadata-action-row">
+<button id="reclassifyStreamsButton" type="button" class="primary-button" onclick="reclassifyStreams()">既存配信を再分類する</button>
+<button type="button" class="secondary-button" onclick="loadStreamMetadataStatus()">状態を更新</button>
+</div>
+<div id="streamMetadataStatus" class="metadata-status-grid"></div>
+<div id="streamMetadataMessage" class="muted"></div>
+<div class="metadata-note"><strong>YouTube連動の準備</strong><p>動画IDを識別キーにし、取得元・最終同期日時を記録します。将来YouTube APIへ切り替えても同じ分類・集計を利用できます。</p></div>
+</div>
+<div class="card">
+<h2>複数企画タグ集計</h2>
+<p class="muted">同じ配信が「友人戦」と「雑談」の両方に該当する場合、それぞれへ1配信として数えます。</p>
+<div id="categoryTable"></div>
+</div>
+</section>
+<section id="streams" class="section">
+<div class="page-intro"><strong>配信</strong>タイトルを押すと配信カルテが開きます。</div>
+<div class="card">
+  <h2>配信一覧</h2>
+  <div class="stream-filter-panel">
+    <div class="stream-filter-grid">
+      <div class="stream-filter-field">
+        <label for="streamTitleSearch">タイトル検索</label>
+        <input id="streamTitleSearch" type="search" placeholder="配信タイトルを入力">
+      </div>
+      <div class="stream-filter-field">
+        <label for="streamDateFrom">開始日</label>
+        <input id="streamDateFrom" type="date">
+      </div>
+      <div class="stream-filter-field">
+        <label for="streamDateTo">終了日</label>
+        <input id="streamDateTo" type="date">
+      </div>
+      <div class="stream-filter-field">
+        <label for="streamCategoryFilter">企画</label>
+        <select id="streamCategoryFilter">
+          <option value="all">すべて</option>
+        </select>
+      </div>
+      <div class="stream-filter-field">
+        <label for="streamSortSelect">並び順</label>
+        <select id="streamSortSelect">
+          <option value="date_desc">日付が新しい順</option>
+          <option value="date_asc">日付が古い順</option>
+          <option value="participants_desc">参加人数が多い順</option>
+          <option value="participants_asc">参加人数が少ない順</option>
+          <option value="comments_desc">コメント数が多い順</option>
+          <option value="comments_asc">コメント数が少ない順</option>
+        </select>
+      </div>
+    </div>
+    <div class="stream-filter-actions">
+      <label class="stream-filter-check">
+        <input id="streamUncategorizedOnly" type="checkbox">
+        未分類だけ表示
+      </label>
+      <button type="button" class="weekly-button secondary" onclick="renderStreams()">条件を適用</button>
+      <button type="button" class="weekly-button secondary" onclick="resetStreamFilters()">検索条件をリセット</button>
+    </div>
+  </div>
+  <div class="stream-result-summary">
+    <span id="streamResultCount">0件を表示</span>
+    <span>タイトルを押すと配信カルテが開きます。</span>
+  </div>
+</div>
+<div class="card"><div id="streamTable"></div></div>
+</section>
 
 <section id="community" class="section"><div class="page-intro"><strong>コミュニティ</strong>活動率、定着率、休眠率など全体の流れを確認します。</div>
 <div class="card">
@@ -257,15 +757,136 @@ html,body,button,input,select,textarea,table{
 </section>
 
 
-<section id="moderation" class="section"><div class="page-intro"><strong>モデレーション</strong>要確認候補を前後の文脈とともに確認します。</div>
+
+<section id="weekly-schedule" class="section"><div class="page-intro"><strong>週間予定</strong>1週間分の予定を入力し、週ごとのJSONファイルとして保存します。</div>
+<div class="card">
+<div class="weekly-toolbar">
+  <div class="weekly-toolbar-group">
+    <button class="weekly-button secondary" onclick="changeScheduleWeek(-1)">← 前週</button>
+    <button class="weekly-button secondary" onclick="changeScheduleWeek(1)">次週 →</button>
+    <button class="weekly-button secondary" onclick="goCurrentScheduleWeek()">今週</button>
+    <button class="weekly-button secondary" onclick="copyPreviousWeekSchedule()">前週を複製</button>
+    <button class="weekly-button secondary" onclick="exportWeeklySchedule()">JSONを書き出し</button>
+    <button class="weekly-button secondary" onclick="openWeeklyScheduleImport()">JSONを読み込み</button>
+    <input id="weeklyScheduleImportFile" type="file" accept=".json,application/json" hidden onchange="importWeeklySchedule(event)">
+    <button class="weekly-button danger" onclick="clearWeeklySchedule()">一括クリア</button>
+  </div>
+  <div id="weeklyRange" class="weekly-range"></div>
+  <button class="weekly-button" onclick="saveWeeklySchedule()">JSONに保存</button>
+</div>
+<div id="weeklyScheduleGrid" class="weekly-grid"></div>
+<div id="weeklyScheduleMessage" class="weekly-message muted"></div>
+<div class="weekly-preview">
+  <h2>週間プレビュー</h2>
+  <p class="muted">入力内容を保存前でも確認できます。</p>
+  <div id="weeklySchedulePreview" class="weekly-preview-grid"></div>
+</div>
+<div class="weekly-diff">
+  <h2>保存済み予定との差分</h2>
+  <p class="muted">現在の入力内容と、最後にJSON保存した内容を比較します。</p>
+  <div class="weekly-post-actions">
+    <button class="weekly-button secondary" onclick="renderWeeklyScheduleDiff()">差分を確認</button>
+    <button class="weekly-button secondary" onclick="generateWeeklyChangeNotice()">変更告知文を生成</button>
+  </div>
+  <div id="weeklyScheduleDiff" class="weekly-diff-list"></div>
+  <div class="weekly-change-notice">
+    <textarea id="weeklyChangeNoticeText" placeholder="「変更告知文を生成」を押すと、差分から告知文を作成します。"></textarea>
+    <div class="weekly-post-actions">
+      <button class="weekly-button secondary" onclick="copyWeeklyChangeNotice()">告知文をコピー</button>
+    </div>
+  </div>
+</div>
+<div class="weekly-extra-fields">
+  <h2>今週の補足</h2>
+  <p class="muted">予定画像や告知文に使う文章を入力できます。</p>
+  <div class="weekly-extra-grid">
+    <div>
+      <label for="weeklyPointsText">今週のポイント</label>
+      <textarea id="weeklyPointsText" placeholder="例：雀魂の参加型を中心に配信予定！"></textarea>
+    </div>
+    <div>
+      <label for="weeklyRequestsText">おねがい</label>
+      <textarea id="weeklyRequestsText" placeholder="例：体調を優先し、予定を変更する場合があります。"></textarea>
+    </div>
+  </div>
+</div>
+<div class="weekly-post">
+  <h2>X投稿文</h2>
+  <p class="muted">現在の入力内容から投稿文を生成します。生成後の文章は自由に編集できます。</p>
+  <textarea id="weeklyXPostText" placeholder="「投稿文を生成」を押すと、ここに週間予定が表示されます。"></textarea>
+  <div class="weekly-post-actions">
+    <button class="weekly-button" onclick="generateWeeklyXPost()">投稿文を生成</button>
+    <button class="weekly-button secondary" onclick="copyWeeklyXPost()">投稿文をコピー</button>
+  </div>
+</div>
+<div class="weekly-image-export">
+  <h2>週間予定画像</h2>
+  <p class="muted">現在の入力内容から、X投稿向けの週間予定画像を生成します。</p>
+  <div class="weekly-template-controls">
+    <div>
+      <label for="weeklyImageTemplate">画像テンプレート</label>
+      <select id="weeklyImageTemplate" onchange="generateWeeklyScheduleImage()">
+        <option value="simple">シンプル・ネイビー</option>
+        <option value="pastel">パステル・肉球</option>
+        <option value="night">夜空・ラベンダー</option>
+      </select>
+    </div>
+    <div>
+      <label for="weeklyImageSize">画像サイズ</label>
+      <select id="weeklyImageSize" onchange="applyWeeklyImageSize()">
+        <option value="x_landscape">X横長（1200×675）</option>
+        <option value="square">正方形（1200×1200）</option>
+        <option value="youtube">YouTube（1280×720）</option>
+      </select>
+    </div>
+    <div>
+      <label for="weeklyCustomBackgroundFile">カスタム背景画像</label>
+      <div class="weekly-background-controls">
+        <input id="weeklyCustomBackgroundFile" type="file" accept="image/png,image/jpeg,image/webp" onchange="loadWeeklyCustomBackground(event)">
+        <label for="weeklyCustomBackgroundFile" class="weekly-file-button">ファイルを選択</label>
+        <button type="button" class="weekly-button secondary" onclick="clearWeeklyCustomBackground()">背景を解除</button>
+        <span id="weeklyCustomBackgroundStatus" class="weekly-background-status">未選択</span>
+      </div>
+    </div>
+  </div>
+  <div class="weekly-post-actions">
+    <button class="weekly-button" onclick="generateWeeklyScheduleImage()">画像を生成</button>
+    <button class="weekly-button secondary" onclick="downloadWeeklyScheduleImage()">PNGで保存</button>
+  </div>
+  <div class="weekly-image-preview-wrap">
+    <canvas id="weeklyScheduleCanvas" width="1200" height="675"></canvas>
+  </div>
+</div>
+<div class="weekly-ai-prompt">
+  <h2>画像生成AI用プロンプト</h2>
+  <p class="muted">下の参考画像と生成したプロンプトを、画像生成AIへ一緒に渡してください。画像内には文字を描かせず、アプリ側で予定文字を重ねる前提です。</p>
+  <div class="weekly-ai-reference">
+    <div>
+      <img src="assets/weekly_schedule_style_reference.png" alt="週間配信予定デザインの参考画像">
+      <p class="muted">デザイン参考画像。構成・配色・可愛さの方向性だけを参照します。</p>
+    </div>
+    <div>
+      <textarea id="weeklyImagePromptText" placeholder="「プロンプトを生成」を押すと、ここに画像生成用の指示が表示されます。"></textarea>
+      <div class="weekly-post-actions">
+        <button class="weekly-button" onclick="generateWeeklyImagePrompt()">プロンプトを生成</button>
+        <button class="weekly-button secondary" onclick="copyWeeklyImagePrompt()">プロンプトをコピー</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+
+<section id="moderation" class="section">
+<div class="page-intro"><strong>モデレーション</strong>要確認候補を前後の文脈とともに確認します。</div>
 <div class="card">
 <h2>モデレーション確認</h2>
 <p class="muted">自動検知は「要確認候補」です。最終判断は必ず人が行ってください。</p>
-<div class="mod-toolbar">
-<input id="moderationSearch" placeholder="表示名またはコメントで検索">
+<div class="mod-toolbar moderation-toolbar-improved">
+<input id="moderationSearch" placeholder="表示名・コメント・配信タイトルで検索">
 <select id="moderationStatusFilter">
+<option value="未確認" selected>未確認のみ</option>
 <option value="">すべての判定</option>
-<option value="未確認">未確認</option>
 <option value="問題なし">問題なし</option>
 <option value="注意">注意</option>
 <option value="セクハラ">セクハラ</option>
@@ -280,7 +901,13 @@ html,body,button,input,select,textarea,table{
 <option value="distance">距離感・独占的発言</option>
 <option value="abuse">暴言・攻撃的表現</option>
 </select>
+<button type="button" class="weekly-button secondary" onclick="resetModerationFilters()">リセット</button>
+<button type="button" class="weekly-button" onclick="markVisibleModerationSafe()">表示中を問題なし</button>
 <a class="export-link" href="/api/moderation/export.csv">確認済みCSV出力</a>
+</div>
+<div class="moderation-result-summary">
+<span id="moderationResultCount">0件を表示</span>
+<span>表示中の候補だけを一括処理します。</span>
 </div>
 </div>
 <div class="card">
@@ -291,7 +918,7 @@ html,body,button,input,select,textarea,table{
 <section id="settings" class="section"><div class="page-intro"><strong>設定</strong>チャンネル情報、保存先、テーマカラーを変更します。</div>
 <div class="card">
 <h2>設定</h2>
-<p class="muted">ブランド表記は固定です。運用に必要な項目だけ変更できます。</p>
+<p class="muted">VTuber AnalyticsはAino Mariaが開発・公開しています。アプリ名とPowered by表記は固定です。運用に必要な項目だけ変更できます。</p>
 
 <div class="settings-grid">
 <label>アプリ名
@@ -307,15 +934,22 @@ html,body,button,input,select,textarea,table{
 </label>
 
 <label>本人のYouTubeチャンネルID
-<input id="settingOwnerIds" class="search" placeholder="複数の場合はカンマ区切り">
+<input id="settingOwnerIds" class="search" placeholder="例：UCbPtcsXkPLLiOySGZJW92gw">
+<small class="muted">
+「UC」から始まるYouTube固有IDを入力してください。本人のコメントをリスナー集計から除外するために使用します。<br>
+「@○○」のハンドル名やチャンネルURLではありません。<br>
+確認場所：YouTube Studio → 設定 → チャンネル → 詳細設定 → チャンネルID
+</small>
 </label>
 
 <label>ライブチャットJSON保存先
 <input id="settingChatDir" class="search">
+<small class="muted">通常は変更不要です。初期設定で指定した保存先が表示されます。</small>
 </label>
 
 <label>Webアプリのポート番号
 <input id="settingPort" class="search" type="number" min="1024" max="65535">
+<small class="muted">通常は8765のままで問題ありません。他のソフトと競合した場合のみ変更してください。</small>
 </label>
 
 <label>テーマカラー
@@ -334,6 +968,173 @@ html,body,button,input,select,textarea,table{
 <button class="primary-button" onclick="saveSettings()">設定を保存</button>
 <span id="settingsMessage" class="muted" style="margin-left:12px"></span>
 </div>
+
+<div class="youtube-connect-panel">
+<h2>YouTubeアカウント連携・配信同期</h2>
+<p class="muted">Google Cloudで作成したウェブアプリ用OAuthクライアントを登録します。認証後は、接続したチャンネルのライブ配信情報を動画ID単位で同期します。</p>
+<div class="youtube-connect-grid">
+<label>OAuthクライアントID
+<input id="youtubeClientId" class="search" autocomplete="off" placeholder="xxxxx.apps.googleusercontent.com">
+</label>
+<label>OAuthクライアントシークレット
+<input id="youtubeClientSecret" class="search" type="password" autocomplete="new-password" placeholder="未変更の場合は空欄">
+</label>
+<label class="wide">承認済みリダイレクトURI
+<input id="youtubeRedirectUri" class="search" value="http://localhost:8765/api/youtube/oauth/callback">
+<small class="muted">Google Cloudにも完全一致で登録してください。初回接続はアプリを起動しているPCで行います。</small>
+</label>
+</div>
+<div class="youtube-connect-actions">
+<button type="button" class="secondary-button" onclick="saveYouTubeOAuthSettings()">OAuth設定を保存</button>
+<button type="button" class="primary-button" onclick="connectYouTubeAccount()">Googleアカウントを接続</button>
+<button id="youtubeSyncButton" type="button" class="primary-button" onclick="syncYouTubeStreams()">ライブ配信を同期</button>
+</div>
+<div id="youtubeConnectionStatus" class="youtube-status-box">YouTube接続状態を確認していません。</div>
+<div id="youtubeSyncResult" class="youtube-sync-result muted"></div>
+</div>
+<div class="background-jobs-panel">
+<h2>バックグラウンド処理</h2>
+<p class="muted">ブラウザを閉じても、Webアプリの黒い画面が起動している間は定期処理を続けます。PCやWebアプリを終了すると止まります。</p>
+<label style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+<input id="backgroundJobsEnabled" type="checkbox">
+<strong>定期処理全体を有効にする</strong>
+</label>
+<div class="background-jobs-grid">
+<div class="background-job-card">
+<h3>YouTube配信情報同期</h3>
+<label><span><input id="backgroundYoutubeEnabled" type="checkbox"> 有効</span></label>
+<label>実行間隔（分）
+<input id="backgroundYoutubeInterval" type="number" min="15" value="180">
+</label>
+<div id="backgroundYoutubeStatus" class="background-job-status"></div>
+<button type="button" class="secondary-button" onclick="runBackgroundJob('youtube_sync')">今すぐ実行</button>
+</div>
+<div class="background-job-card">
+<h3>企画タグ・曜日再計算</h3>
+<label><span><input id="backgroundReclassifyEnabled" type="checkbox"> 有効</span></label>
+<label>実行間隔（分）
+<input id="backgroundReclassifyInterval" type="number" min="15" value="360">
+</label>
+<div id="backgroundReclassifyStatus" class="background-job-status"></div>
+<button type="button" class="secondary-button" onclick="runBackgroundJob('reclassify')">今すぐ実行</button>
+</div>
+<div class="background-job-card">
+<h3>自動バックアップ</h3>
+<label><span><input id="backgroundBackupEnabled" type="checkbox"> 有効</span></label>
+<label>実行間隔（分）
+<input id="backgroundBackupInterval" type="number" min="15" value="1440">
+</label>
+<label><span><input id="backgroundBackupChat" type="checkbox"> チャットJSONも含める</span></label>
+<div id="backgroundBackupStatus" class="background-job-status"></div>
+<button type="button" class="secondary-button" onclick="runBackgroundJob('backup')">今すぐ実行</button>
+</div>
+</div>
+<div class="background-job-actions">
+<button type="button" class="primary-button" onclick="saveBackgroundJobSettings()">定期処理設定を保存</button>
+<button type="button" class="secondary-button" onclick="loadBackgroundJobStatus()">状態を更新</button>
+</div>
+<div id="backgroundJobsMessage" class="muted"></div>
+<div id="backgroundJobsHistory" class="background-history"></div>
+</div>
+
+<div class="chat-progress-panel">
+<h2>YouTubeライブチャット取得</h2>
+<p class="muted">公開チャンネルの「ライブ」タブURLまたは再生リストURLから、ライブチャットJSONを取得します。</p>
+<div class="chat-download-url-row">
+<label>ライブ一覧URL
+<input id="chatDownloadUrl" class="search" placeholder="https://www.youtube.com/@チャンネル名/streams">
+</label>
+<button id="chatDownloadStartButton" class="primary-button" onclick="startChatDownload()">取得を開始</button>
+<button id="chatDownloadCancelButton" class="danger-button" onclick="cancelChatDownload()" disabled>中止</button>
+</div>
+<div id="chatDownloadProgressBox" class="chat-progress-box">
+<div class="chat-progress-summary">
+<div class="chat-progress-stat"><span>進捗</span><strong id="chatProgressCount">0 / ?</strong></div>
+<div class="chat-progress-stat"><span>成功</span><strong id="chatProgressSuccess">0</strong></div>
+<div class="chat-progress-stat"><span>失敗</span><strong id="chatProgressFailed">0</strong></div>
+<div class="chat-progress-stat"><span>経過時間</span><strong id="chatProgressElapsed">00:00</strong></div>
+</div>
+<div class="chat-progress-track"><div id="chatProgressBar" class="chat-progress-bar"></div></div>
+<div class="chat-progress-status">
+<span id="chatProgressMessage" class="chat-progress-idle">待機中</span>
+<span id="chatProgressPercent">--%</span>
+</div>
+<div id="chatCurrentTitle" class="chat-current-title">処理中の配信はありません。</div>
+<details id="chatErrorDetails" class="chat-errors" hidden>
+<summary>エラー詳細（<span id="chatErrorCount">0</span>件）</summary>
+<pre id="chatErrorText"></pre>
+</details>
+<details class="chat-log">
+<summary>処理ログを表示</summary>
+<pre id="chatLogText">ログはまだありません。</pre>
+</details>
+</div>
+</div>
+
+<div class="diagnostics-panel">
+<h2>動作診断・エラー情報</h2>
+<p class="muted">DB、実行環境、保存先、YouTube取得状態、直近のWeb APIエラーをまとめて確認します。</p>
+<div class="diagnostics-actions">
+<button type="button" class="primary-button" onclick="loadDiagnostics()">診断情報を更新</button>
+<button type="button" class="secondary-button" onclick="copyDiagnostics()">診断情報をコピー</button>
+</div>
+<div id="diagnosticsMessage" class="muted">まだ診断していません。</div>
+<div id="diagnosticsSummary" class="diagnostics-summary"></div>
+<div id="diagnosticsDetails" class="diagnostic-grid"></div>
+<div id="diagnosticsErrors" class="diagnostic-errors"></div>
+<details>
+<summary>診断情報のJSONを表示</summary>
+<textarea id="diagnosticsRaw" class="diagnostic-raw" readonly></textarea>
+</details>
+</div>
+
+<div class="backup-panel">
+<h2>全データのバックアップ・復元</h2>
+<p class="muted">DB、設定、モデレーションルール、週間予定、取得済みチャットJSONなどをZIPで保存します。</p>
+<div class="backup-actions">
+<label class="backup-option"><input id="backupIncludeChat" type="checkbox" checked>取得済みチャットJSONを含める</label>
+<button class="primary-button" onclick="downloadFullBackup()">バックアップZIPを作成</button>
+<button class="secondary-button" onclick="loadBackupList()">履歴を更新</button>
+</div>
+<div class="backup-file-row">
+<input id="backupRestoreFile" type="file" accept=".zip,application/zip" onchange="updateBackupRestoreName()">
+<label for="backupRestoreFile" class="weekly-file-button">復元ZIPを選択</label>
+<span id="backupRestoreName" class="muted">未選択</span>
+<button class="danger-button" onclick="restoreFullBackup()">選択したZIPから復元</button>
+</div>
+<p class="muted">復元前には現在の全データを自動バックアップします。復元後はアプリを再起動してください。</p>
+<div id="backupMessage" class="muted"></div>
+<div id="backupList" class="backup-list"></div>
+</div>
+<div class="recovery-panel">
+<h2>保存・復旧・監査</h2>
+<p class="muted">バックアップが実際に復元できる状態かを検証し、操作履歴を確認します。</p>
+<div class="recovery-summary">
+<div class="recovery-stat"><span>保存済みバックアップ</span><strong id="recoveryBackupCount">-</strong></div>
+<div class="recovery-stat"><span>最新バックアップ</span><strong id="recoveryLatestStatus">未確認</strong></div>
+<div class="recovery-stat"><span>DBサイズ</span><strong id="recoveryDatabaseSize">-</strong></div>
+<div class="recovery-stat"><span>保持世代数</span><strong id="recoveryGenerations">-</strong></div>
+</div>
+<div class="settings-grid">
+<label>保持するバックアップ世代数
+<input id="recoveryMaxGenerations" class="search" type="number" min="3" max="200" value="20">
+</label>
+<label style="display:flex;align-items:center;gap:8px">
+<input id="recoveryVerifyAfterCreate" type="checkbox" checked>
+作成直後に整合性確認する
+</label>
+</div>
+<div class="recovery-actions">
+<button type="button" class="primary-button" onclick="saveRecoverySettings()">復旧設定を保存</button>
+<button type="button" class="secondary-button" onclick="verifyAllBackups()">全バックアップを検証</button>
+<button type="button" class="secondary-button" onclick="cleanupBackups()">古い世代を整理</button>
+<button type="button" class="secondary-button" onclick="loadRecoveryStatus()">状態を更新</button>
+</div>
+<div id="recoveryMessage" class="muted"></div>
+<div id="recoveryVerification" class="recovery-history"></div>
+<h3>操作履歴</h3>
+<div id="recoveryAuditHistory" class="recovery-history"></div>
+</div>
 </div>
 </section>
 <section id="about" class="section">
@@ -343,10 +1144,7 @@ html,body,button,input,select,textarea,table{
 <p>YouTubeライブチャットから、配信とコミュニティの変化を振り返るローカル分析ツールです。</p>
 <div class="about-grid">
 <div class="about-card"><strong>製品名</strong><p>VTuber Analytics</p></div>
-<div class="about-card">
-  <strong>バージョン</strong>
-  <p>1.0.0</p>
-</div>
+<div class="about-card"><strong>バージョン</strong><p>1.0.0</p></div>
 <div class="about-card"><strong>Created & Designed by</strong><p>Aino Maria</p></div>
 <div class="about-card"><strong>ライセンス</strong><p>MIT License</p></div>
 </div>
@@ -359,11 +1157,1063 @@ html,body,button,input,select,textarea,table{
 <div id="detailModal" class="modal"><div class="modal-content"><button class="close" onclick="closeModal()">×</button><div id="detailBody"></div></div></div>
 
 <script>
-async function api(path){const r=await fetch(path,{cache:"no-store"});const d=await r.json();if(!r.ok)throw new Error(d.error||"通信エラー");return d}
+
+let chatDownloadPollTimer=null;
+function formatElapsedTime(totalSeconds){
+  const seconds=Math.max(0,Number(totalSeconds)||0);
+  const hours=Math.floor(seconds/3600);
+  const minutes=Math.floor((seconds%3600)/60);
+  const rest=Math.floor(seconds%60);
+  return hours>0
+    ?`${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}:${String(rest).padStart(2,"0")}`
+    :`${String(minutes).padStart(2,"0")}:${String(rest).padStart(2,"0")}`;
+}
+function sanitizeChatProgressText(value){
+  return String(value??"")
+    .replace(/\u001b\[[0-?]*[ -/]*[@-~]/g,"")
+    .replace(/[\u0000-\u001f\u007f]/g,"")
+    .replace(/\ufffd+/g,"")
+    .trim();
+}
+function renderChatDownloadStatus(status){
+  const total=Number(status.total)||0;
+  const current=Number(status.current)||0;
+  const success=Number(status.success)||0;
+  const failed=Number(status.failed)||0;
+  const handled=Math.max(current,success+failed);
+  const percent=total>0?Math.min(100,Math.round((handled/total)*100)):0;
+
+  document.getElementById("chatProgressCount").textContent=`${handled} / ${total||"?"}`;
+  document.getElementById("chatProgressSuccess").textContent=success;
+  document.getElementById("chatProgressFailed").textContent=failed;
+  document.getElementById("chatProgressElapsed").textContent=formatElapsedTime(status.elapsed_seconds);
+  document.getElementById("chatProgressBar").style.width=total>0?`${percent}%`:(status.running?"18%":"0%");
+  document.getElementById("chatProgressBar").style.animation=total===0&&status.running?"chatProgressPulse 1.4s ease-in-out infinite":"none";
+  document.getElementById("chatProgressPercent").textContent=total>0?`${percent}%`:"--%";
+  document.getElementById("chatProgressMessage").textContent=sanitizeChatProgressText(status.message||"待機中");
+  document.getElementById("chatProgressMessage").className=status.running?"":"chat-progress-idle";
+  document.getElementById("chatCurrentTitle").textContent=status.current_title
+    ?`処理中：${sanitizeChatProgressText(status.current_title)}`
+    :(status.running?"配信一覧を確認しています...":"処理中の配信はありません。");
+
+  const errors=Array.isArray(status.errors)?status.errors:[];
+  const errorDetails=document.getElementById("chatErrorDetails");
+  errorDetails.hidden=errors.length===0;
+  document.getElementById("chatErrorCount").textContent=errors.length;
+  document.getElementById("chatErrorText").textContent=errors.map(sanitizeChatProgressText).filter(Boolean).join("\n\n");
+
+  const logs=Array.isArray(status.log_tail)?status.log_tail:[];
+  document.getElementById("chatLogText").textContent=logs.length?logs.map(sanitizeChatProgressText).filter(Boolean).join("\n"):"ログはまだありません。";
+
+  document.getElementById("chatDownloadStartButton").disabled=Boolean(status.running);
+  document.getElementById("chatDownloadCancelButton").disabled=!status.running;
+
+  if(status.url&&!document.getElementById("chatDownloadUrl").value){
+    document.getElementById("chatDownloadUrl").value=status.url;
+  }
+
+  if(status.running){
+    scheduleChatDownloadPoll();
+  }else if(chatDownloadPollTimer){
+    clearTimeout(chatDownloadPollTimer);
+    chatDownloadPollTimer=null;
+  }
+}
+async function loadChatDownloadStatus(){
+  try{
+    const status=await api("/api/chat-download/status");
+    renderChatDownloadStatus(status);
+  }catch(error){
+    document.getElementById("chatProgressMessage").textContent=`進捗取得エラー：${error.message}`;
+  }
+}
+function scheduleChatDownloadPoll(){
+  if(chatDownloadPollTimer)clearTimeout(chatDownloadPollTimer);
+  chatDownloadPollTimer=setTimeout(loadChatDownloadStatus,1000);
+}
+async function startChatDownload(){
+  const url=document.getElementById("chatDownloadUrl").value.trim();
+  if(!url){
+    document.getElementById("chatProgressMessage").textContent="ライブ一覧URLを入力してください。";
+    return;
+  }
+  document.getElementById("chatDownloadStartButton").disabled=true;
+  try{
+    const response=await fetch("/api/chat-download/start",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({url})
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"取得処理を開始できませんでした。");
+    renderChatDownloadStatus(data);
+  }catch(error){
+    document.getElementById("chatProgressMessage").textContent=`開始エラー：${error.message}`;
+    document.getElementById("chatDownloadStartButton").disabled=false;
+  }
+}
+async function cancelChatDownload(){
+  if(!confirm("実行中のチャット取得を中止しますか？"))return;
+  try{
+    const response=await fetch("/api/chat-download/cancel",{method:"POST"});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"中止できませんでした。");
+    renderChatDownloadStatus(data);
+  }catch(error){
+    document.getElementById("chatProgressMessage").textContent=`中止エラー：${error.message}`;
+  }
+}
+
+let weeklyScheduleData=null;
+let weeklyScheduleSavedBaseline=null;
+let weeklyCustomBackgroundImage=null;
+let weeklyCustomBackgroundName="";
+let weeklyDraftSaveTimer=null;
+const weeklyDraftStoragePrefix="vtuber_analytics_weekly_draft_";
+function weeklyDraftStorageKey(weekStart){
+  return `${weeklyDraftStoragePrefix}${weekStart}`;
+}
+function readWeeklyDraft(weekStart){
+  try{
+    const raw=localStorage.getItem(weeklyDraftStorageKey(weekStart));
+    if(!raw)return null;
+    const draft=JSON.parse(raw);
+    if(!draft||draft.week_start!==weekStart||!Array.isArray(draft.days)||draft.days.length!==7){
+      localStorage.removeItem(weeklyDraftStorageKey(weekStart));
+      return null;
+    }
+    return draft;
+  }catch(error){
+    localStorage.removeItem(weeklyDraftStorageKey(weekStart));
+    return null;
+  }
+}
+function saveWeeklyDraftNow(){
+  if(!weeklyScheduleData)return;
+  const draft=collectWeeklySchedule();
+  localStorage.setItem(weeklyDraftStorageKey(draft.week_start),JSON.stringify(draft));
+  document.getElementById("weeklyScheduleMessage").textContent="入力内容を自動で下書き保存しました。";
+}
+function scheduleWeeklyDraftSave(){
+  clearTimeout(weeklyDraftSaveTimer);
+  weeklyDraftSaveTimer=setTimeout(saveWeeklyDraftNow,500);
+}
+function clearWeeklyDraft(weekStart){
+  clearTimeout(weeklyDraftSaveTimer);
+  localStorage.removeItem(weeklyDraftStorageKey(weekStart));
+}
+function formatScheduleDate(value){
+  const [y,m,d]=String(value).split("-");
+  return `${Number(m)}/${Number(d)}`;
+}
+const weeklyScheduleTypes=["休み","雀魂","ポケモン","雑談","その他"];
+const weeklySchedulePresets=[
+  {name:"雀魂・参加型",type:"雀魂",title:"参加型配信",note:""},
+  {name:"雀魂・段位戦",type:"雀魂",title:"段位戦",note:""},
+  {name:"ポケモン・ランクバトル",type:"ポケモン",title:"ランクバトル",note:""},
+  {name:"プライベートマッチ",type:"ポケモン",title:"プライベートマッチ",note:""},
+  {name:"雑談配信",type:"雑談",title:"雑談配信",note:""},
+  {name:"配信お休み",type:"休み",title:"",note:""},
+  {name:"その他・自由入力",type:"その他",title:"",note:""}
+];
+function renderWeeklySchedulePreview(){
+  if(!weeklyScheduleData)return;
+  const schedule=collectWeeklySchedule();
+  document.getElementById("weeklySchedulePreview").innerHTML=schedule.days.map(day=>{
+    const title=day.title.trim()||(day.type==="休み"?"配信お休み":"予定未入力");
+    return `<div class="weekly-preview-day ${day.type==="休み"?"is-rest":""}">
+      <div class="weekly-preview-date">${esc(day.weekday)}曜日 ${esc(formatScheduleDate(day.date))}</div>
+      <div class="weekly-preview-type">${esc(day.type)}</div>
+      <div class="weekly-preview-title">${esc(title)}</div>
+      ${day.note.trim()?`<div class="weekly-preview-note">${esc(day.note)}</div>`:""}
+    </div>`;
+  }).join("");
+}
+async function loadWeeklySchedule(weekStart=""){
+  clearTimeout(weeklyDraftSaveTimer);
+  const suffix=weekStart?`?week_start=${encodeURIComponent(weekStart)}`:"";
+  weeklyScheduleData=await api(`/api/weekly-schedule${suffix}`);
+  weeklyScheduleSavedBaseline=JSON.parse(JSON.stringify(weeklyScheduleData));
+  document.getElementById("weeklyRange").textContent=`${weeklyScheduleData.week_start} ～ ${weeklyScheduleData.week_end}`;
+  const draft=readWeeklyDraft(weeklyScheduleData.week_start);
+  if(draft){
+    weeklyScheduleData.points=draft.points||"";
+    weeklyScheduleData.requests=draft.requests||"";
+    weeklyScheduleData.days=weeklyScheduleData.days.map((day,index)=>{
+      const source=draft.days[index]||{};
+      return {...day,type:source.type||"その他",title:source.title||"",note:source.note||""};
+    });
+  }
+  loadWeeklyScheduleFromMemory();
+  document.getElementById("weeklyScheduleDiff").innerHTML="";
+  document.getElementById("weeklyScheduleMessage").textContent=draft
+    ?"この週の自動保存された下書きを復元しました。"
+    :"保存済みJSONを読み込みました。";
+}
+
+function applyWeeklyPreset(index){
+  const presetSelect=document.querySelector(`[data-weekly-preset-index="${index}"]`);
+  const message=document.getElementById("weeklyScheduleMessage");
+  if(!presetSelect||presetSelect.value===""){
+    message.textContent="適用する定型プリセットを選択してください。";
+    return;
+  }
+
+  const preset=weeklySchedulePresets[Number(presetSelect.value)];
+  if(!preset)return;
+
+  document.querySelector(`[data-weekly-index="${index}"][data-weekly-field="type"]`).value=preset.type;
+  document.querySelector(`[data-weekly-index="${index}"][data-weekly-field="title"]`).value=preset.title;
+  document.querySelector(`[data-weekly-index="${index}"][data-weekly-field="note"]`).value=preset.note;
+
+  renderWeeklySchedulePreview();
+  scheduleWeeklyDraftSave();
+  message.textContent=`「${preset.name}」を適用しました。`;
+}
+
+function collectWeeklySchedule(){
+  const days=weeklyScheduleData.days.map(day=>({...day}));
+  document.querySelectorAll("[data-weekly-index]").forEach(el=>{
+    const index=Number(el.dataset.weeklyIndex);
+    days[index][el.dataset.weeklyField]=el.value;
+  });
+  return {
+    week_start:weeklyScheduleData.week_start,
+    points:document.getElementById("weeklyPointsText")?.value||"",
+    requests:document.getElementById("weeklyRequestsText")?.value||"",
+    days
+  };
+}
+function applyWeeklyScheduleDays(sourceDays){
+  if(!weeklyScheduleData)return;
+  weeklyScheduleData.days=weeklyScheduleData.days.map((day,index)=>{
+    const source=sourceDays[index]||{};
+    return {...day,type:source.type||"その他",title:source.title||"",note:source.note||""};
+  });
+  loadWeeklyScheduleFromMemory();
+  scheduleWeeklyDraftSave();
+}
+function loadWeeklyScheduleFromMemory(){
+  document.getElementById("weeklyPointsText").value=weeklyScheduleData.points||"";
+  document.getElementById("weeklyRequestsText").value=weeklyScheduleData.requests||"";
+  document.getElementById("weeklyScheduleGrid").innerHTML=weeklyScheduleData.days.map((day,index)=>`
+    <div class="weekly-day">
+      <h3>${esc(day.weekday)}曜日<span class="date">${esc(formatScheduleDate(day.date))}</span></h3>
+      <div class="weekly-preset-row">
+        <select data-weekly-preset-index="${index}" aria-label="${esc(day.weekday)}曜日の定型プリセット">
+          <option value="">定型プリセット</option>
+          ${weeklySchedulePresets.map((preset,presetIndex)=>`<option value="${presetIndex}">${esc(preset.name)}</option>`).join("")}
+        </select>
+        <button type="button" class="weekly-button secondary" onclick="applyWeeklyPreset(${index})">適用</button>
+      </div>
+      <select data-weekly-index="${index}" data-weekly-field="type" aria-label="${esc(day.weekday)}曜日の配信種別">
+        ${weeklyScheduleTypes.map(type=>`<option value="${esc(type)}" ${type===(day.type||"その他")?"selected":""}>${esc(type)}</option>`).join("")}
+      </select>
+      <input data-weekly-index="${index}" data-weekly-field="title" value="${esc(day.title)}" placeholder="タイトル">
+      <textarea data-weekly-index="${index}" data-weekly-field="note" placeholder="補足メモ">${esc(day.note)}</textarea>
+    </div>`).join("");
+  document.querySelectorAll("[data-weekly-index]").forEach(el=>{
+    el.addEventListener("input",()=>{
+      renderWeeklySchedulePreview();
+      scheduleWeeklyDraftSave();
+    });
+    el.addEventListener("change",()=>{
+      renderWeeklySchedulePreview();
+      scheduleWeeklyDraftSave();
+    });
+  });
+  ["weeklyPointsText","weeklyRequestsText"].forEach(id=>{
+    document.getElementById(id).oninput=scheduleWeeklyDraftSave;
+  });
+  renderWeeklySchedulePreview();
+}
+async function copyPreviousWeekSchedule(){
+  if(!weeklyScheduleData)return;
+  const message=document.getElementById("weeklyScheduleMessage");
+  message.textContent="前週の予定を読み込み中...";
+  try{
+    const previousStart=shiftIsoDate(weeklyScheduleData.week_start,-7);
+    const previous=await api(`/api/weekly-schedule?week_start=${encodeURIComponent(previousStart)}`);
+    applyWeeklyScheduleDays(previous.days||[]);
+    message.textContent="前週の内容を複製しました。確認後にJSONへ保存してください。";
+  }catch(error){message.textContent=`複製エラー: ${error.message}`}
+}
+function clearWeeklySchedule(){
+  if(!weeklyScheduleData)return;
+  if(!window.confirm("この週の入力内容をすべてクリアします。保存するまではJSONに反映されません。"))return;
+  applyWeeklyScheduleDays(weeklyScheduleData.days.map(()=>({type:"その他",title:"",note:""})));
+  document.getElementById("weeklyScheduleMessage").textContent="入力内容をクリアしました。保存するまでは元のJSONは変更されません。";
+}
+
+
+
+
+function buildWeeklyImagePrompt(){
+  if(!weeklyScheduleData)return "";
+  const schedule=collectWeeklySchedule();
+  const scheduleLines=schedule.days.map(day=>{
+    const date=formatXPostDate(day.date,day.weekday);
+    const title=day.type==="休み"
+      ?"配信お休み"
+      :(day.title.trim()?`${day.type}／${day.title.trim()}`:day.type);
+    const note=day.note.trim()?`、補足：${day.note.trim()}`:"";
+    return `- ${date}：${title}${note}`;
+  }).join("\n");
+
+  return `添付した参考画像の、白を基調とした可愛い週間配信予定表の雰囲気、青・ラベンダー・淡いピンクの配色、肉球、リボン、星、レース風の縁取り、7日分の縦長カード、下部の案内欄という構成を参考にしてください。
+
+ただし、参考画像をそのまま複製せず、著作権に配慮した完全オリジナルデザインにしてください。既存作品・既存ゲーム・企業・キャラクター・ロゴ・固有アイテムを連想させる意匠は使用しないでください。麻雀は一般的な抽象ゲームタイル、対戦ゲームはオリジナルの丸い対戦アイコンで表現してください。
+
+【用途】
+VTuber「愛野まりあ」の週間配信予定画像
+
+【画像仕様】
+- 横長、3:2、1536×1024程度
+- 白地を中心に、青・ラベンダー・淡いピンクのパステルカラー
+- 可愛い、清潔感、読みやすい、やや手描き風
+- 7日分の縦長カードを横一列に配置
+- 上部に大きなタイトル用の空白
+- タイトル下に期間表示用のリボン型空白
+- 各カード上部に日付・曜日を後から載せられる空白
+- 各カード中央に配信種別を示すオリジナルアイコン用スペース
+- 各カード下部に配信タイトルを後から載せられる十分な空白
+- 下部に「今週のポイント」と「おねがい」の2つの文章欄
+- 下部中央または右側に、青いクッションで眠るオリジナルの紫色の猫
+- 肉球、リボン、星、きらめきを控えめに配置
+- 文字を載せても読みにくくならないよう、中央部分は装飾を減らす
+
+【重要】
+- 画像内に文字、数字、曜日、日付、ロゴを一切描かない
+- 文字に見える模様や意味不明な記号も描かない
+- 7枚のカードを必ず同じ幅で配置
+- 人物やVTuberの立ち絵は描かない
+- 余白を十分に確保する
+- 後からアプリで日本語文字を重ねるため、情報欄は明るく単純な背景にする
+
+【今週の予定内容】
+${scheduleLines}
+
+【今週のポイント】
+${schedule.points||""}
+
+【おねがい】
+${schedule.requests||""}
+
+予定内容は、アイコンや小さな装飾の選択だけに反映してください。文字としては描画しないでください。`;
+}
+function generateWeeklyImagePrompt(){
+  const textarea=document.getElementById("weeklyImagePromptText");
+  textarea.value=buildWeeklyImagePrompt();
+  document.getElementById("weeklyScheduleMessage").textContent="参考画像を前提にした画像生成用プロンプトを作成しました。";
+}
+async function copyWeeklyImagePrompt(){
+  const textarea=document.getElementById("weeklyImagePromptText");
+  const message=document.getElementById("weeklyScheduleMessage");
+  if(!textarea.value.trim()){
+    message.textContent="先に画像生成用プロンプトを生成してください。";
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(textarea.value);
+    message.textContent="画像生成用プロンプトをクリップボードへコピーしました。";
+  }catch(error){
+    textarea.focus();
+    textarea.select();
+    const copied=document.execCommand("copy");
+    message.textContent=copied
+      ?"画像生成用プロンプトをクリップボードへコピーしました。"
+      :"コピーできませんでした。文章を選択して手動でコピーしてください。";
+  }
+}
+
+function roundRectPath(ctx,x,y,width,height,radius){
+  const r=Math.min(radius,width/2,height/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+width,y,x+width,y+height,r);
+  ctx.arcTo(x+width,y+height,x,y+height,r);
+  ctx.arcTo(x,y+height,x,y,r);
+  ctx.arcTo(x,y,x+width,y,r);
+  ctx.closePath();
+}
+function wrapCanvasText(ctx,text,maxWidth,maxLines){
+  const value=String(text||"");
+  if(!value)return [];
+  const lines=[];
+  let current="";
+  for(const char of value){
+    const test=current+char;
+    if(ctx.measureText(test).width>maxWidth&&current){
+      lines.push(current);
+      current=char;
+      if(lines.length>=maxLines)break;
+    }else{
+      current=test;
+    }
+  }
+  if(lines.length<maxLines&&current)lines.push(current);
+  if(lines.length===maxLines){
+    const original=lines.join("");
+    if(original.length<value.length){
+      let last=lines[maxLines-1];
+      while(last&&ctx.measureText(last+"…").width>maxWidth)last=last.slice(0,-1);
+      lines[maxLines-1]=last+"…";
+    }
+  }
+  return lines;
+}
+function getScheduleTypeLabel(day){
+  if(day.type==="休み")return "配信お休み";
+  return day.title.trim()?`${day.type}｜${day.title.trim()}`:day.type;
+}
+
+
+
+function loadWeeklyCustomBackground(event){
+  const file=event.target.files&&event.target.files[0];
+  const status=document.getElementById("weeklyCustomBackgroundStatus");
+  if(!file)return;
+
+  if(!["image/png","image/jpeg","image/webp"].includes(file.type)){
+    status.textContent="PNG・JPEG・WebP画像を選択してください。";
+    event.target.value="";
+    return;
+  }
+
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const image=new Image();
+    image.onload=()=>{
+      weeklyCustomBackgroundImage=image;
+      weeklyCustomBackgroundName=file.name;
+      status.textContent=`使用中：${file.name}`;
+      generateWeeklyScheduleImage();
+    };
+    image.onerror=()=>{
+      status.textContent="背景画像を読み込めませんでした。";
+      event.target.value="";
+    };
+    image.src=reader.result;
+  };
+  reader.onerror=()=>{
+    status.textContent="背景画像の読込中にエラーが発生しました。";
+    event.target.value="";
+  };
+  reader.readAsDataURL(file);
+}
+function clearWeeklyCustomBackground(){
+  weeklyCustomBackgroundImage=null;
+  weeklyCustomBackgroundName="";
+  const input=document.getElementById("weeklyCustomBackgroundFile");
+  const status=document.getElementById("weeklyCustomBackgroundStatus");
+  if(input)input.value="";
+  if(status)status.textContent="未選択";
+  generateWeeklyScheduleImage();
+}
+function drawWeeklyCustomBackground(ctx,image,width,height){
+  const imageRatio=image.width/image.height;
+  const canvasRatio=width/height;
+  let sourceX=0;
+  let sourceY=0;
+  let sourceWidth=image.width;
+  let sourceHeight=image.height;
+
+  if(imageRatio>canvasRatio){
+    sourceWidth=image.height*canvasRatio;
+    sourceX=(image.width-sourceWidth)/2;
+  }else{
+    sourceHeight=image.width/canvasRatio;
+    sourceY=(image.height-sourceHeight)/2;
+  }
+
+  ctx.drawImage(
+    image,
+    sourceX,sourceY,sourceWidth,sourceHeight,
+    0,0,width,height
+  );
+
+  ctx.fillStyle="rgba(255,255,255,0.62)";
+  ctx.fillRect(0,0,width,height);
+}
+
+function getWeeklyImageSizeConfig(){
+  const selected=document.getElementById("weeklyImageSize")?.value||"x_landscape";
+  const configs={
+    x_landscape:{width:1200,height:675,name:"x_landscape"},
+    square:{width:1200,height:1200,name:"square"},
+    youtube:{width:1280,height:720,name:"youtube"}
+  };
+  return configs[selected]||configs.x_landscape;
+}
+function applyWeeklyImageSize(){
+  const canvas=document.getElementById("weeklyScheduleCanvas");
+  const config=getWeeklyImageSizeConfig();
+  canvas.width=config.width;
+  canvas.height=config.height;
+  generateWeeklyScheduleImage();
+}
+
+function getWeeklyImageTheme(){
+  const selected=document.getElementById("weeklyImageTemplate")?.value||"simple";
+  const themes={
+    simple:{
+      background:"#f4f7fb",
+      headerStart:"#24324a",
+      headerEnd:"#3f587d",
+      card:"#ffffff",
+      cardBorder:"#d8e0ea",
+      active:"#24324a",
+      rest:"#7b8798",
+      title:"#1f2937",
+      muted:"#667085",
+      accent:"#3f587d",
+      decoration:"none"
+    },
+    pastel:{
+      background:"#fffafd",
+      headerStart:"#7699e8",
+      headerEnd:"#b695e8",
+      card:"#ffffff",
+      cardBorder:"#d9d6f2",
+      active:"#668ee0",
+      rest:"#a9a9b7",
+      title:"#34406b",
+      muted:"#756f89",
+      accent:"#8b72d6",
+      decoration:"paws"
+    },
+    night:{
+      background:"#f4f0fb",
+      headerStart:"#2f315f",
+      headerEnd:"#6a4f9c",
+      card:"#fffefe",
+      cardBorder:"#cfc6e4",
+      active:"#4d4d8f",
+      rest:"#827e91",
+      title:"#302f52",
+      muted:"#716c86",
+      accent:"#7054a6",
+      decoration:"stars"
+    }
+  };
+  return themes[selected]||themes.simple;
+}
+function drawWeeklyImageDecorations(ctx,theme,width,height){
+  if(theme.decoration==="paws"){
+    ctx.save();
+    ctx.globalAlpha=.16;
+    ctx.fillStyle=theme.accent;
+    ctx.font='700 42px "Segoe UI Symbol","Meiryo",sans-serif';
+    ["🐾","🐾","🐾","🐾"].forEach((mark,index)=>{
+      const positions=[[35,180],[width-75,180],[45,height-45],[width-85,height-45]];
+      ctx.fillText(mark,positions[index][0],positions[index][1]);
+    });
+    ctx.restore();
+  }
+  if(theme.decoration==="stars"){
+    ctx.save();
+    ctx.globalAlpha=.22;
+    ctx.fillStyle=theme.accent;
+    ctx.font='700 34px "Meiryo","Yu Gothic",sans-serif';
+    [["✦",55,190],["✧",width-80,185],["✦",75,height-50],["✧",width-95,height-55]].forEach(item=>{
+      ctx.fillText(item[0],item[1],item[2]);
+    });
+    ctx.restore();
+  }
+}
+
+function generateWeeklyScheduleImage(){
+  if(!weeklyScheduleData)return;
+  const schedule=collectWeeklySchedule();
+  const canvas=document.getElementById("weeklyScheduleCanvas");
+  const ctx=canvas.getContext("2d");
+  const width=canvas.width;
+  const height=canvas.height;
+  const theme=getWeeklyImageTheme();
+  const isSquare=height>=1000;
+
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha=1;
+  ctx.textAlign="left";
+  ctx.textBaseline="alphabetic";
+  ctx.lineWidth=1;
+  ctx.clearRect(0,0,width,height);
+  if(weeklyCustomBackgroundImage){
+    drawWeeklyCustomBackground(ctx,weeklyCustomBackgroundImage,width,height);
+  }else{
+    ctx.fillStyle=theme.background;
+    ctx.fillRect(0,0,width,height);
+    drawWeeklyImageDecorations(ctx,theme,width,height);
+  }
+
+  const gradient=ctx.createLinearGradient(0,0,width,0);
+  gradient.addColorStop(0,theme.headerStart);
+  gradient.addColorStop(1,theme.headerEnd);
+  ctx.fillStyle=gradient;
+  ctx.fillRect(0,0,width,isSquare?145:125);
+
+  ctx.fillStyle="#ffffff";
+  ctx.font='700 50px "Meiryo","Yu Gothic",sans-serif';
+  ctx.fillText("週間配信予定",60,isSquare?72:62);
+
+  ctx.font='500 24px "Meiryo","Yu Gothic",sans-serif';
+  ctx.fillText(`${schedule.week_start} ～ ${weeklyScheduleData.week_end}`,62,isSquare?112:98);
+
+  const columns=isSquare?4:7;
+  const rows=Math.ceil(schedule.days.length/columns);
+  const startX=isSquare?45:28;
+  const startY=isSquare?175:145;
+  const gap=isSquare?12:8;
+  const extraAreaHeight=isSquare?210:135;
+  const usableHeight=height-startY-extraAreaHeight-20;
+  const cardWidth=(width-startX*2-gap*(columns-1))/columns;
+  const cardHeight=(usableHeight-gap*(rows-1))/rows;
+
+  schedule.days.forEach((day,index)=>{
+    const col=index%columns;
+    const row=Math.floor(index/columns);
+    const x=startX+col*(cardWidth+gap);
+    const y=startY+row*(cardHeight+gap);
+
+    ctx.fillStyle=weeklyCustomBackgroundImage?"rgba(255,255,255,0.88)":theme.card;
+    roundRectPath(ctx,x,y,cardWidth,cardHeight,18);
+    ctx.fill();
+
+    ctx.strokeStyle=theme.cardBorder;
+    ctx.lineWidth=2;
+    roundRectPath(ctx,x,y,cardWidth,cardHeight,18);
+    ctx.stroke();
+
+    const badgeX=x+12;
+    const badgeY=y+14;
+    const badgeWidth=Math.max(92,cardWidth-24);
+    const badgeHeight=isSquare?40:36;
+    ctx.fillStyle=day.type==="休み"?theme.rest:theme.active;
+    roundRectPath(ctx,badgeX,badgeY,badgeWidth,badgeHeight,badgeHeight/2);
+    ctx.fill();
+
+    ctx.fillStyle="#ffffff";
+    ctx.font=`700 ${isSquare?20:16}px "Meiryo","Yu Gothic",sans-serif`;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(formatXPostDate(day.date,day.weekday),badgeX+badgeWidth/2,badgeY+badgeHeight/2);
+
+    ctx.textAlign="left";
+    ctx.textBaseline="alphabetic";
+    ctx.fillStyle=theme.title;
+    ctx.font=`700 ${isSquare?23:17}px "Meiryo","Yu Gothic",sans-serif`;
+
+    const titleBaseY=y+(isSquare?88:82);
+    const titleLines=wrapCanvasText(
+      ctx,
+      getScheduleTypeLabel(day),
+      cardWidth-24,
+      isSquare?2:3
+    );
+    titleLines.forEach((line,lineIndex)=>{
+      ctx.fillText(line,x+12,titleBaseY+lineIndex*(isSquare?28:22));
+    });
+
+    if(day.note.trim()&&cardHeight>=150){
+      ctx.fillStyle=theme.muted;
+      ctx.font=`400 ${isSquare?15:12}px "Meiryo","Yu Gothic",sans-serif`;
+      const noteLines=wrapCanvasText(ctx,day.note.trim(),cardWidth-24,1);
+      if(noteLines[0])ctx.fillText(noteLines[0],x+12,y+cardHeight-14);
+    }
+  });
+
+  const extraTop=height-(isSquare?170:92);
+  ctx.textAlign="left";
+  ctx.fillStyle=theme.title;
+  ctx.font='700 20px "Meiryo","Yu Gothic",sans-serif';
+  ctx.fillText("今週のポイント",45,extraTop);
+  ctx.fillText("おねがい",width/2+25,extraTop);
+  ctx.fillStyle=theme.muted;
+  ctx.font='400 17px "Meiryo","Yu Gothic",sans-serif';
+  wrapCanvasText(ctx,schedule.points||"",width/2-90,isSquare?3:1).forEach((line,i)=>ctx.fillText(line,45,extraTop+28+i*23));
+  wrapCanvasText(ctx,schedule.requests||"",width/2-90,isSquare?3:1).forEach((line,i)=>ctx.fillText(line,width/2+25,extraTop+28+i*23));
+  ctx.fillStyle=theme.muted;
+  ctx.font='400 18px "Meiryo","Yu Gothic",sans-serif';
+  ctx.textAlign="right";
+  ctx.fillText("※予定は変更になる場合があります。",width-55,height-18);
+
+  document.getElementById("weeklyScheduleMessage").textContent=weeklyCustomBackgroundImage
+    ?`カスタム背景「${weeklyCustomBackgroundName}」で週間予定画像を生成しました。`
+    :"現在の入力内容から週間予定画像を生成しました。";
+}
+function downloadWeeklyScheduleImage(){
+  const canvas=document.getElementById("weeklyScheduleCanvas");
+  if(!weeklyScheduleData)return;
+  generateWeeklyScheduleImage();
+  const link=document.createElement("a");
+  link.download=`weekly_schedule_${weeklyScheduleData.week_start}_${getWeeklyImageSizeConfig().name}.png`;
+  link.href=canvas.toDataURL("image/png");
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  document.getElementById("weeklyScheduleMessage").textContent="週間予定画像をPNGで保存しました。";
+}
+
+
+function normalizeWeeklyDayForDiff(day){
+  return {
+    type:String(day?.type||"その他"),
+    title:String(day?.title||"").trim(),
+    note:String(day?.note||"").trim()
+  };
+}
+function weeklyDaySummary(day){
+  const value=normalizeWeeklyDayForDiff(day);
+  const main=value.type==="休み"
+    ?"配信お休み"
+    :(value.title?`${value.type}｜${value.title}`:value.type);
+  return value.note?`${main}（${value.note}）`:main;
+}
+
+function collectWeeklyScheduleDiffs(){
+  if(!weeklyScheduleData||!weeklyScheduleSavedBaseline)return [];
+
+  const diffs=collectWeeklyScheduleDiffs();
+
+  return diffs;
+}
+function generateWeeklyChangeNotice(){
+  const textarea=document.getElementById("weeklyChangeNoticeText");
+  const message=document.getElementById("weeklyScheduleMessage");
+  const diffs=collectWeeklyScheduleDiffs();
+
+  if(!diffs.length){
+    textarea.value="";
+    message.textContent="保存済み予定から変更はありません。";
+    renderWeeklyScheduleDiff();
+    return;
+  }
+
+  const lines=["【週間配信予定 変更のお知らせ】",""];
+  diffs.forEach(diff=>{
+    if(diff.date==="今週のポイント"||diff.date==="おねがい"){
+      lines.push(`■ ${diff.date}`);
+      lines.push(`${diff.before} → ${diff.after}`);
+      lines.push("");
+      return;
+    }
+
+    if(diff.kind==="added"){
+      lines.push(`■ ${diff.date}　予定追加`);
+      lines.push(diff.after);
+    }else if(diff.kind==="removed"){
+      lines.push(`■ ${diff.date}　予定削除`);
+      lines.push(`変更前：${diff.before}`);
+    }else if(diff.kind==="rest"){
+      lines.push(`■ ${diff.date}　配信お休みに変更`);
+      lines.push(`変更前：${diff.before}`);
+    }else{
+      lines.push(`■ ${diff.date}　予定変更`);
+      lines.push(`変更前：${diff.before}`);
+      lines.push(`変更後：${diff.after}`);
+    }
+    lines.push("");
+  });
+
+  lines.push("ご確認よろしくお願いします。");
+  textarea.value=lines.join("\n").trim();
+  renderWeeklyScheduleDiff();
+  message.textContent="保存済み予定との差分から変更告知文を生成しました。";
+}
+async function copyWeeklyChangeNotice(){
+  const textarea=document.getElementById("weeklyChangeNoticeText");
+  const message=document.getElementById("weeklyScheduleMessage");
+  if(!textarea.value.trim()){
+    message.textContent="先に変更告知文を生成してください。";
+    return;
+  }
+
+  try{
+    await navigator.clipboard.writeText(textarea.value);
+    message.textContent="変更告知文をクリップボードへコピーしました。";
+  }catch(error){
+    textarea.focus();
+    textarea.select();
+    const copied=document.execCommand("copy");
+    message.textContent=copied
+      ?"変更告知文をクリップボードへコピーしました。"
+      :"コピーできませんでした。文章を選択して手動でコピーしてください。";
+  }
+}
+
+function renderWeeklyScheduleDiff(){
+  const container=document.getElementById("weeklyScheduleDiff");
+  if(!container||!weeklyScheduleData||!weeklyScheduleSavedBaseline){
+    if(container)container.innerHTML='<div class="muted">比較対象がありません。</div>';
+    return;
+  }
+
+  const current=collectWeeklySchedule();
+  const baseline=weeklyScheduleSavedBaseline;
+  const diffs=[];
+
+  current.days.forEach((day,index)=>{
+    const oldDay=normalizeWeeklyDayForDiff(baseline.days?.[index]);
+    const newDay=normalizeWeeklyDayForDiff(day);
+    const oldEmpty=oldDay.type==="その他"&&!oldDay.title&&!oldDay.note;
+    const newEmpty=newDay.type==="その他"&&!newDay.title&&!newDay.note;
+    const same=oldDay.type===newDay.type&&oldDay.title===newDay.title&&oldDay.note===newDay.note;
+    if(same)return;
+
+    let kind="changed";
+    let label="変更";
+    if(oldEmpty&&!newEmpty){kind="added";label="追加";}
+    else if(!oldEmpty&&newEmpty){kind="removed";label="削除";}
+    else if(newDay.type==="休み"&&oldDay.type!=="休み"){kind="rest";label="休みに変更";}
+
+    diffs.push({
+      date:formatXPostDate(day.date,day.weekday),
+      kind,
+      label,
+      before:weeklyDaySummary(oldDay),
+      after:weeklyDaySummary(newDay)
+    });
+  });
+
+  const oldPoints=String(baseline.points||"").trim();
+  const newPoints=String(current.points||"").trim();
+  if(oldPoints!==newPoints){
+    diffs.push({
+      date:"今週のポイント",
+      kind:"changed",
+      label:"変更",
+      before:oldPoints||"未入力",
+      after:newPoints||"未入力"
+    });
+  }
+
+  const oldRequests=String(baseline.requests||"").trim();
+  const newRequests=String(current.requests||"").trim();
+  if(oldRequests!==newRequests){
+    diffs.push({
+      date:"おねがい",
+      kind:"changed",
+      label:"変更",
+      before:oldRequests||"未入力",
+      after:newRequests||"未入力"
+    });
+  }
+
+  if(!diffs.length){
+    container.innerHTML='<div class="muted">保存済み予定から変更はありません。</div>';
+    return;
+  }
+
+  container.innerHTML=diffs.map(diff=>`
+    <div class="weekly-diff-item">
+      <div class="weekly-diff-head">
+        <strong>${esc(diff.date)}</strong>
+        <span class="weekly-diff-badge ${esc(diff.kind)}">${esc(diff.label)}</span>
+      </div>
+      <div class="weekly-diff-old">変更前：${esc(diff.before)}</div>
+      <div>変更後：${esc(diff.after)}</div>
+    </div>
+  `).join("");
+}
+
+function formatXPostDate(isoDate,weekday){
+  const parts=String(isoDate||"").split("-");
+  if(parts.length!==3)return `${weekday||""}曜日`;
+  return `${Number(parts[1])}/${Number(parts[2])}(${String(weekday||"").replace("曜日","")})`;
+}
+function generateWeeklyXPost(){
+  if(!weeklyScheduleData)return;
+  const schedule=collectWeeklySchedule();
+  const lines=["【週間配信予定】",""];
+  schedule.days.forEach(day=>{
+    const dateLabel=formatXPostDate(day.date,day.weekday);
+    const title=day.title.trim();
+    if(day.type==="休み"){
+      lines.push(`${dateLabel}　配信お休み`);
+    }else if(title){
+      lines.push(`${dateLabel}　${day.type}｜${title}`);
+    }else{
+      lines.push(`${dateLabel}　${day.type}`);
+    }
+  });
+  if(schedule.points.trim())lines.push("","【今週のポイント】",schedule.points.trim());
+  if(schedule.requests.trim())lines.push("","【おねがい】",schedule.requests.trim());
+  lines.push("","※予定は変更になる場合があります。");
+  document.getElementById("weeklyXPostText").value=lines.join("\n");
+  document.getElementById("weeklyScheduleMessage").textContent="現在の入力内容からX投稿文を生成しました。";
+}
+async function copyWeeklyXPost(){
+  const textarea=document.getElementById("weeklyXPostText");
+  const message=document.getElementById("weeklyScheduleMessage");
+  if(!textarea.value.trim()){
+    message.textContent="先に投稿文を生成してください。";
+    return;
+  }
+  try{
+    await navigator.clipboard.writeText(textarea.value);
+    message.textContent="X投稿文をクリップボードへコピーしました。";
+  }catch(error){
+    textarea.focus();
+    textarea.select();
+    const copied=document.execCommand("copy");
+    message.textContent=copied
+      ?"X投稿文をクリップボードへコピーしました。"
+      :"コピーできませんでした。投稿文を選択して手動でコピーしてください。";
+  }
+}
+
+function exportWeeklySchedule(){
+  if(!weeklyScheduleData)return;
+  const schedule=collectWeeklySchedule();
+  const text=JSON.stringify(schedule,null,2);
+  const blob=new Blob(["\ufeff",text],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;
+  link.download=`weekly_schedule_${schedule.week_start}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  document.getElementById("weeklyScheduleMessage").textContent="現在の入力内容をJSONファイルへ書き出しました。";
+}
+function openWeeklyScheduleImport(){
+  const input=document.getElementById("weeklyScheduleImportFile");
+  input.value="";
+  input.click();
+}
+function validateImportedWeeklySchedule(value){
+  if(!value||typeof value!=="object"||Array.isArray(value))throw new Error("JSONの形式が正しくありません。");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value.week_start||"")))throw new Error("week_startが正しくありません。");
+  if(!Array.isArray(value.days)||value.days.length!==7)throw new Error("daysは7日分必要です。");
+  const allowedTypes=new Set(weeklyScheduleTypes);
+  const days=value.days.map((day,index)=>{
+    if(!day||typeof day!=="object"||Array.isArray(day))throw new Error(`${index+1}日目の形式が正しくありません。`);
+    const type=String(day.type||"その他");
+    return {
+      type:allowedTypes.has(type)?type:"その他",
+      title:String(day.title||""),
+      note:String(day.note||"")
+    };
+  });
+  return {
+    week_start:String(value.week_start),
+    points:String(value.points||""),
+    requests:String(value.requests||""),
+    days
+  };
+}
+async function importWeeklySchedule(event){
+  const file=event.target.files&&event.target.files[0];
+  if(!file)return;
+  const message=document.getElementById("weeklyScheduleMessage");
+  message.textContent="JSONファイルを読み込み中...";
+  try{
+    const raw=(await file.text()).replace(/^\uFEFF/,"");
+    const imported=validateImportedWeeklySchedule(JSON.parse(raw));
+    weeklyScheduleData=await api(`/api/weekly-schedule?week_start=${encodeURIComponent(imported.week_start)}`);
+    weeklyScheduleData.points=imported.points;
+    weeklyScheduleData.requests=imported.requests;
+    applyWeeklyScheduleDays(imported.days);
+    document.getElementById("weeklyRange").textContent=`${weeklyScheduleData.week_start} ～ ${weeklyScheduleData.week_end}`;
+    message.textContent="JSONを読み込みました。内容を確認し、必要なら「JSONに保存」で確定してください。";
+  }catch(error){
+    message.textContent=`読込エラー: ${error.message}`;
+  }finally{
+    event.target.value="";
+  }
+}
+
+async function saveWeeklySchedule(){
+  const message=document.getElementById("weeklyScheduleMessage");
+  message.textContent="保存中...";
+  try{
+    const response=await fetch("/api/weekly-schedule",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(collectWeeklySchedule())});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"保存に失敗しました。");
+    weeklyScheduleData=data.schedule;
+    weeklyScheduleSavedBaseline=JSON.parse(JSON.stringify(data.schedule));
+    clearWeeklyDraft(weeklyScheduleData.week_start);
+    renderWeeklyScheduleDiff();
+    message.textContent="JSONに保存しました。自動下書きは削除しました。";
+  }catch(error){message.textContent=`保存エラー: ${error.message}`}
+}
+function shiftIsoDate(value,days){
+  const date=new Date(`${value}T00:00:00`);
+  date.setDate(date.getDate()+days);
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+}
+function changeScheduleWeek(direction){
+  if(!weeklyScheduleData)return loadWeeklySchedule();
+  loadWeeklySchedule(shiftIsoDate(weeklyScheduleData.week_start,direction*7));
+}
+function goCurrentScheduleWeek(){loadWeeklySchedule()}
+
+async function api(path){
+  const r=await fetch(path,{cache:"no-store",credentials:"same-origin"});
+  const d=await r.json();
+  if(r.status===401){
+    showAuthOverlay(Boolean(d.setup_required));
+    throw new Error("ログインが必要です。");
+  }
+  if(!r.ok)throw new Error(d.error||"通信エラー");
+  return d;
+}
+function uiStateMarkup(type,title,detail="",retryFunction=""){
+  const icon=type==="loading"
+    ?'<span class="ui-spinner" aria-hidden="true"></span>'
+    :(type==="error"?"!":"・");
+  const action=retryFunction
+    ?`<div class="ui-state-actions"><button type="button" class="weekly-button secondary" onclick="${retryFunction}">再試行</button></div>`
+    :"";
+  return `<div class="ui-state ${esc(type)}">
+    <div class="ui-state-icon">${icon}</div>
+    <div class="ui-state-title">${esc(title)}</div>
+    ${detail?`<div class="ui-state-detail">${esc(detail)}</div>`:""}
+    ${action}
+  </div>`;
+}
+function setUiState(elementId,type,title,detail="",retryFunction=""){
+  const element=document.getElementById(elementId);
+  if(element)element.innerHTML=uiStateMarkup(type,title,detail,retryFunction);
+}
+function loadingState(elementId,title="読み込み中です"){
+  setUiState(elementId,"loading",title,"データを取得しています。しばらくお待ちください。");
+}
+function emptyState(elementId,title="データがありません",detail="条件を変更するか、データを取得してください。"){
+  setUiState(elementId,"empty",title,detail);
+}
+function errorState(elementId,error,retryFunction=""){
+  const message=error instanceof Error?error.message:String(error||"不明なエラー");
+  setUiState(elementId,"error","読み込みに失敗しました",message,retryFunction);
+}
+
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
-function table(h,rows){return `<div class="table-wrap"><table><thead><tr>${h.map(x=>`<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`}
+function table(h,rows){
+  if(!rows.length)return uiStateMarkup("empty","表示するデータがありません","現在の条件に一致するデータはありません。");
+  const labeledRows=rows.map(row=>{
+    let index=0;
+    return row.replace(/<td([^>]*)>/g,(match,attrs)=>{
+      const label=h[index++]||"";
+      return `<td${attrs} data-label="${esc(label)}">`;
+    });
+  });
+  return `<div class="table-wrap" role="region" aria-label="横スクロール可能な表" tabindex="0"><table><thead><tr>${h.map(x=>`<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${labeledRows.join("")}</tbody></table></div>`;
+}
+
+function enhanceMobileTables(){
+  document.querySelectorAll(".table-wrap").forEach(wrapper=>{
+    if(wrapper.dataset.mobileReady)return;
+    wrapper.dataset.mobileReady="1";
+    wrapper.setAttribute("title","左右にスクロールできます");
+  });
+}
+const mobileTableObserver=new MutationObserver(()=>enhanceMobileTables());
+mobileTableObserver.observe(document.body,{childList:true,subtree:true});
+window.addEventListener("resize",enhanceMobileTables);
+
 function lineChart(rows,key,klass,labelKey="stream_date"){
-  if(!rows.length)return "<p>データなし</p>";
+  if(!rows.length)return uiStateMarkup("empty","グラフに表示するデータがありません","配信データを取得すると、ここに推移が表示されます。");
   const vals=rows.map(r=>Number(r[key]||0)), labels=rows.map(r=>r[labelKey]||"");
   const w=700,h=240,p=30,max=Math.max(...vals,1);
   const pts=vals.map((v,i)=>{const x=p+(w-p*2)*(i/Math.max(vals.length-1,1));const y=h-p-(h-p*2)*(v/max);return `${x},${y}`}).join(" ");
@@ -388,30 +2238,236 @@ function recentBars(rows,key,fillClass){
     </div>`).join("")}</div>`;
 }
 
-function buildInsight(summary,categories,streams){
-  const notes=[];
+function numberDiff(current,previous){
+  return Number(current||0)-Number(previous||0);
+}
+function signedNumber(value){
+  const number=Number(value||0);
+  return number>0?`+${number}`:`${number}`;
+}
+function buildInsight(summary,categories,streams,weekdays){
   const counts=summary.status_counts||{};
-  if((counts.new||0)>=5)notes.push(`直近30日で新規コメント参加者が ${counts.new} 人います。新規が定着しやすい導線を意識すると良さそうです。`);
-  if((counts.dormant||0)>=10)notes.push(`60日以上コメントがない休眠候補が ${counts.dormant} 人います。久しぶりの人も入りやすい企画が候補です。`);
-  if((counts.returning||0)>0)notes.push(`最近復帰したリスナーが ${counts.returning} 人確認されています。戻りやすい空気は維持できています。`);
+  const latest=streams[0]||null;
+  const previous=streams[1]||null;
+  const bestCategory=categories[0]||null;
+  const bestWeekday=[...(weekdays||[])].sort(
+    (a,b)=>Number(b.avg_participants||0)-Number(a.avg_participants||0)
+  )[0]||null;
 
-  if(categories.length){
-    const best=categories[0];
-    notes.push(`平均コメント参加人数が最も高い企画は「${best.category}」で、平均 ${best.avg_participants} 人です。`);
+  const situation=[];
+  const good=[];
+  const caution=[];
+  const actions=[];
+
+  if(latest){
+    situation.push(`最新配信「${latest.title||"タイトル未設定"}」は、コメント参加者 ${Number(latest.participants||0)}人・コメント ${Number(latest.comments||0)}件でした。`);
+  }else{
+    situation.push("配信データがまだないため、直近配信との比較はできません。");
   }
 
-  if(streams.length>=2){
-    const latest=streams[0], previous=streams[1];
-    const diff=(latest.participants||0)-(previous.participants||0);
-    if(diff>0)notes.push(`最新配信のコメント参加人数は前回より ${diff} 人増えています。`);
-    else if(diff<0)notes.push(`最新配信のコメント参加人数は前回より ${Math.abs(diff)} 人少なめです。`);
-    else notes.push("最新配信のコメント参加人数は前回と同じです。");
+  if(latest&&previous){
+    const participantDiff=numberDiff(latest.participants,previous.participants);
+    const commentDiff=numberDiff(latest.comments,previous.comments);
+    situation.push(`前回比は参加者 ${signedNumber(participantDiff)}人、コメント ${signedNumber(commentDiff)}件です。`);
+    if(participantDiff>0)good.push("参加者数は前回より増えています。今回のタイトル・企画・告知方法は再利用候補です。");
+    if(commentDiff>0)good.push("コメント量が増えています。話題の投げ方や参加者との往復が機能した可能性があります。");
+    if(participantDiff<0)caution.push("参加者数が前回を下回っています。開始時刻、告知、企画の分かりやすさを直近2配信で比較してください。");
+    if(commentDiff<0)caution.push("コメント量が減っています。配信者側の発話だけで進まず、答えやすい質問を10〜15分ごとに置くのが有効です。");
   }
 
-  return notes.length?`<h2>今日の分析</h2><p>${notes.join("</p><p>")}</p>`:"<h2>今日の分析</h2><p>分析できるデータがまだ不足しています。</p>";
+  if(bestCategory){
+    good.push(`平均参加人数が最も高い企画タグは「${bestCategory.category}」で、平均 ${bestCategory.avg_participants}人です。集客の軸として残す価値があります。`);
+    actions.push(`次の7日以内に「${bestCategory.category}」を1回入れ、タイトル前半にも企画名を明記する。`);
+  }
+
+  if(bestWeekday&&bestWeekday.weekday){
+    actions.push(`平均参加人数が高い「${bestWeekday.weekday}曜日」を主力企画の候補日にする。`);
+  }
+
+  if(Number(counts.new||0)>0){
+    caution.push(`新規リスナーが ${counts.new}人います。初見が来ているだけで、定着したとはまだ言えません。`);
+    actions.push("新規向けに、次回予定を配信終了前と固定コメントで具体的に案内する。");
+  }else{
+    caution.push("直近30日で新規コメント参加者が少ない状態です。既存常連向けの空気だけになっていないか確認が必要です。");
+    actions.push("初見でも内容が分かるタイトルと、参加方法を冒頭3分以内に案内する。");
+  }
+
+  if(Number(counts.dormant||0)>=5){
+    caution.push(`休眠候補が ${counts.dormant}人います。全員へ直接声をかけるのではなく、戻りやすい企画を用意する方が安全です。`);
+    actions.push("久しぶりでも参加しやすい友人戦・雑談枠を作り、Xでは『久しぶりの方も歓迎』と軽く伝える。");
+  }
+
+  if(Number(counts.returning||0)>0){
+    good.push(`復帰リスナーが ${counts.returning}人います。戻ってきた人を過剰に特別扱いせず、自然に迎える空気は維持してください。`);
+  }
+
+  if(!good.length)good.push("現時点では明確な上向き要素を断定できません。単発の数字より、直近3〜5配信の推移を優先してください。");
+  if(!caution.length)caution.push("大きな警戒材料はありません。ただし、安定は放置してよいという意味ではありません。");
+  if(!actions.length)actions.push("次回配信では、開始前告知・冒頭案内・終了前の次回予告の3点を揃える。");
+
+  return `<div class="action-analysis">
+    <div class="action-analysis-header">
+      <div>
+        <h2>今日の分析</h2>
+        <div class="action-analysis-date">最新データを、次回の行動へ変換しています。</div>
+      </div>
+      <span class="action-priority">配信者向け判断支援</span>
+    </div>
+    <div class="action-block primary">
+      <h3>現在の状態</h3>
+      ${situation.map(text=>`<p>${esc(text)}</p>`).join("")}
+    </div>
+    <div class="action-analysis-grid">
+      <div class="action-block good">
+        <h3>良かった点・伸ばす部分</h3>
+        <ul>${good.map(text=>`<li>${esc(text)}</li>`).join("")}</ul>
+      </div>
+      <div class="action-block caution">
+        <h3>注意点・放置しない部分</h3>
+        <ul>${caution.map(text=>`<li>${esc(text)}</li>`).join("")}</ul>
+      </div>
+    </div>
+    <div class="action-block next">
+      <h3>次回から実行すること</h3>
+      <ol>${actions.slice(0,5).map(text=>`<li>${esc(text)}</li>`).join("")}</ol>
+    </div>
+  </div>`;
+}
+function listenerPlaybookData(counts){
+  return [
+    {filter:"超常連",label:"超常連",count:Number(counts.super_regular||0),aim:"維持と負担防止",text:"感謝は伝えつつ、盛り上げ役を当然のように背負わせない。内輪会話を長引かせず、新規が入り込める余白を残します。"},
+    {filter:"常連",label:"常連",count:Number(counts.regular||0),aim:"習慣化と関係安定",text:"名前を拾い、前回の話題を軽く覚えていることを示します。ただし個人への話題集中は避け、配信全体へ話を戻します。"},
+    {filter:"準常連",label:"準常連",count:Number(counts.semi_regular||counts.semi||0),aim:"次の参加理由を作る",text:"好きそうな企画を分かりやすく告知し、『また来て』ではなく次回日時や内容を具体的に渡します。常連化しやすい層です。"},
+    {filter:"新規",label:"新規",count:Number(counts.new||0),aim:"2回目の来訪",text:"内輪ネタの説明を省かず、参加方法と配信の特徴を早めに案内します。初回で深く囲い込まず、次回来る理由を一つ渡します。"},
+    {filter:"復帰",label:"復帰",count:Number(counts.returning||0),aim:"自然な再定着",text:"久しぶりを強調しすぎず、通常のリスナーとして迎えます。離れていた理由を詮索せず、戻りやすい空気を守ります。"},
+    {filter:"休眠候補",label:"休眠候補",count:Number(counts.dormant||0),aim:"圧をかけない再接触",text:"個別に追い回さず、得意企画や参加型の告知で自然に接点を作ります。『最近来ないね』は罪悪感を生むので避けます。"}
+  ];
+}
+function renderListenerPlaybook(counts){
+  const container=document.getElementById("listenerPlaybook");
+  if(!container)return;
+  container.innerHTML=listenerPlaybookData(counts).map(item=>`
+    <button type="button" class="listener-playbook-card" onclick="openListenerSegment('${esc(item.filter)}')">
+      <div class="listener-playbook-head"><strong>${esc(item.label)}</strong><span class="listener-playbook-count">${item.count.toLocaleString()}人</span></div>
+      <div class="listener-playbook-label">攻略方針：${esc(item.aim)}</div>
+      <div class="listener-playbook-text">${esc(item.text)}</div>
+      <div class="listener-playbook-action">該当リスナーを見る →</div>
+    </button>`).join("");
+}
+
+let listenerGuideReturnActive=false;
+
+function showListenerGuideBackButton(filter){
+  const wrap=document.getElementById("listenerBackToGuideWrap");
+  const label=document.getElementById("listenerBackGuideLabel");
+  listenerGuideReturnActive=true;
+  if(wrap)wrap.hidden=false;
+  if(label)label.textContent=`「${filter}」の該当リスナーを表示中`;
+}
+
+function hideListenerGuideBackButton(){
+  listenerGuideReturnActive=false;
+  const wrap=document.getElementById("listenerBackToGuideWrap");
+  if(wrap)wrap.hidden=true;
+}
+
+function backToListenerGuide(){
+  document.querySelectorAll("nav button").forEach(button=>button.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(section=>section.classList.remove("active"));
+  const homeButton=document.querySelector('nav button[data-tab="dashboard"]');
+  if(homeButton)homeButton.classList.add("active");
+  const dashboard=document.getElementById("dashboard");
+  if(dashboard)dashboard.classList.add("active");
+  hideListenerGuideBackButton();
+  const guide=document.getElementById("listenerPlaybook");
+  if(guide){
+    const top=guide.getBoundingClientRect().top+window.scrollY-20;
+    window.scrollTo({top,behavior:"smooth"});
+  }else{
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+}
+
+function openListenerSegment(filter){
+  showListenerGuideBackButton(filter);
+  document.querySelectorAll("nav button").forEach(button=>button.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(section=>section.classList.remove("active"));
+  const navButton=document.querySelector('nav button[data-tab="listeners"]');
+  if(navButton)navButton.classList.add("active");
+  document.getElementById("listeners").classList.add("active");
+  listenerFilter=filter;
+  document.querySelectorAll("#listenerFilters .filter-btn").forEach(button=>{
+    button.classList.toggle("active",button.dataset.filter===filter);
+  });
+  document.getElementById("listenerSearch").value="";
+  document.getElementById("listenerMinComments").value="";
+  document.getElementById("listenerMinParticipation").value="0";
+  document.getElementById("listenerLastSeen").value="all";
+  searchListenersImmediately();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+
+function renderTopListenersCommentary(rows,summary){
+  const container=document.getElementById("topListenersCommentary");
+  if(!container)return;
+
+  if(!Array.isArray(rows)||!rows.length){
+    container.innerHTML=uiStateMarkup(
+      "empty",
+      "常連構成を分析できません",
+      "リスナーデータが増えると、固定化や参加の偏りをここで確認できます。"
+    );
+    return;
+  }
+
+  const top=rows.slice(0,10);
+  const totalComments=top.reduce((sum,row)=>sum+Number(row.comments||row.total_comments||0),0);
+  const firstComments=Number(top[0]?.comments||top[0]?.total_comments||0);
+  const topShare=totalComments>0?Math.round(firstComments/totalComments*100):0;
+  const activeCount=top.filter(row=>{
+    const rate=Number(row.participation_rate||row.attendance_rate||0);
+    return rate>=50;
+  }).length;
+  const dormantCount=Number(summary?.status_counts?.dormant||0);
+
+  let balanceText="";
+  let balanceClass="good";
+  if(topShare>=35){
+    balanceText=`1位のコメント比率がTOP10内の約${topShare}%です。発言が一人へ集中しすぎていないか、話題の振り方を確認してください。`;
+    balanceClass="caution";
+  }else{
+    balanceText=`1位のコメント比率はTOP10内の約${topShare}%です。特定の一人だけに依存する極端な偏りは目立ちません。`;
+  }
+
+  const activityText=activeCount>=5
+    ?`TOP10のうち${activeCount}人が高い参加率を維持しています。常連基盤は比較的安定しています。`
+    :`高い参加率を維持している人はTOP10のうち${activeCount}人です。常連の入れ替わりや参加頻度の低下を確認してください。`;
+
+  const actionText=dormantCount>=5
+    ?`休眠候補が${dormantCount}人います。常連だけで会話を完結させず、久しぶりでも入りやすい話題と参加型を混ぜてください。`
+    :"常連への感謝は伝えつつ、名前呼びや内輪話を長引かせず、新規が発言できる間を残してください。";
+
+  container.innerHTML=`
+    <div class="top-listeners-commentary-grid">
+      <div class="top-listeners-note ${balanceClass}">
+        <strong>コメント集中度</strong>
+        <p>${esc(balanceText)}</p>
+      </div>
+      <div class="top-listeners-note good">
+        <strong>常連基盤</strong>
+        <p>${esc(activityText)}</p>
+      </div>
+      <div class="top-listeners-note action">
+        <strong>配信で意識すること</strong>
+        <p>${esc(actionText)}</p>
+      </div>
+    </div>`;
 }
 
 async function loadDashboard(){
+  ["dashboardCards","dashboardInsight","listenerPlaybook","recentParticipantsBars","recentCommentsBars","participantsChart","commentsChart","topListeners","topListenersCommentary","weekdayTable"].forEach(id=>loadingState(id,"ホームを読み込み中"));
+  try{
   const [s,c,w,streams]=await Promise.all([
     api("/api/summary"),
     api("/api/categories"),
@@ -434,7 +2490,8 @@ async function loadDashboard(){
       <strong>${value}</strong>
     </div>`).join("");
 
-  document.getElementById("dashboardInsight").innerHTML=buildInsight(s,c,streams);
+  document.getElementById("dashboardInsight").innerHTML=buildInsight(s,c,streams,w);
+  renderListenerPlaybook(counts);
   document.getElementById("recentParticipantsBars").innerHTML=recentBars(streams,"participants","mini-fill-a");
   document.getElementById("recentCommentsBars").innerHTML=recentBars(streams,"comments","mini-fill-b");
 
@@ -452,16 +2509,8 @@ async function loadDashboard(){
         <td>${r.comment_count}</td>
       </tr>`)
   );
-
-  const max=Math.max(...c.map(r=>r.avg_participants||0),1);
-  document.getElementById("categoryBars").innerHTML=c.map(r=>`
-    <div class="bar-row">
-      <div>${esc(r.category)}</div>
-      <div class="bar"><div style="width:${((r.avg_participants||0)/max)*100}%"></div></div>
-      <div>${r.avg_participants??0}</div>
-    </div>`).join("");
-
-  document.getElementById("weekdayTable").innerHTML=table(
+  renderTopListenersCommentary(s.top_listeners||[],s);
+document.getElementById("weekdayTable").innerHTML=table(
     ["曜日","配信数","平均参加人数","平均コメント"],
     w.map(r=>`
       <tr>
@@ -471,6 +2520,9 @@ async function loadDashboard(){
         <td>${r.avg_comments}</td>
       </tr>`)
   );
+  }catch(error){
+    ["dashboardCards","dashboardInsight","listenerPlaybook","recentParticipantsBars","recentCommentsBars","participantsChart","commentsChart","topListeners","topListenersCommentary","weekdayTable"].forEach(id=>errorState(id,error,"loadDashboard()"));
+  }
 }
 
 async function quickSearchListener(){
@@ -490,12 +2542,169 @@ async function quickSearchListener(){
   renderListeners();
 }
 
-async function loadCategories(){const rows=await api("/api/categories");document.getElementById("categoryTable").innerHTML=table(["企画","配信数","平均参加人数","平均コメント","最高参加人数","最高コメント"],rows.map(r=>`<tr><td><span class="badge">${esc(r.category)}</span></td><td>${r.stream_count}</td><td>${r.avg_participants}</td><td>${r.avg_comments}</td><td>${r.max_participants}</td><td>${r.max_comments}</td></tr>`))}
-async function loadStreams(){const rows=await api("/api/streams?limit=100");document.getElementById("streamTable").innerHTML=table(["日付","曜日","企画","タイトル","参加人数","コメント"],rows.map(r=>`<tr><td>${esc(r.stream_date)}</td><td>${esc(r.weekday)}</td><td><span class="badge">${esc(r.category)}</span></td><td><button class="link-button" onclick="openStream('${encodeURIComponent(r.video_id)}')">${esc(r.title)}</button></td><td>${r.participants}</td><td>${r.comments}</td></tr>`))}
+async function loadCategories(){
+  loadingState("categoryTable","企画別データを読み込み中");
+  try{
+    const rows=await api("/api/categories");
+    document.getElementById("categoryTable").innerHTML=table(
+      ["企画タグ","該当配信数","平均参加人数","平均コメント","最高参加人数","最高コメント"],
+      rows.map(r=>`<tr><td><span class="badge">${esc(r.category)}</span></td><td>${Number(r.stream_count||0).toLocaleString()}</td><td>${r.avg_participants}</td><td>${r.avg_comments}</td><td>${r.max_participants}</td><td>${r.max_comments}</td></tr>`)
+    );
+  }catch(error){errorState("categoryTable",error,"loadCategories()");}
+}
+
+async function loadStreamMetadataStatus(){
+  const container=document.getElementById("streamMetadataStatus");
+  if(!container)return;
+  container.innerHTML=uiStateMarkup("loading","再分類状態を確認中","");
+  try{
+    const data=await api("/api/stream-metadata/status");
+    const latest=data.latest_result||{};
+    container.innerHTML=`
+      <div class="metadata-status-card"><span>登録配信</span><strong>${Number(data.stream_count||0).toLocaleString()}件</strong></div>
+      <div class="metadata-status-card"><span>タグ分類済み</span><strong>${Number(data.tagged_stream_count||0).toLocaleString()}件</strong></div>
+      <div class="metadata-status-card"><span>企画タグ総数</span><strong>${Number(data.tag_count||0).toLocaleString()}件</strong></div>
+      <div class="metadata-status-card"><span>曜日未設定</span><strong>${Number(data.missing_weekday||0).toLocaleString()}件</strong></div>
+      <div class="metadata-status-card"><span>識別キー</span><strong>${esc(data.identity_key||"video_id")}</strong></div>
+      <div class="metadata-status-card"><span>YouTube連動準備</span><strong>${data.youtube_ready?"対応済み":"未対応"}</strong></div>
+      <div class="metadata-status-card"><span>前回変更配信</span><strong>${Number(latest.changed_streams||0).toLocaleString()}件</strong></div>
+      <div class="metadata-status-card"><span>前回曜日修正</span><strong>${Number(latest.weekday_updates||0).toLocaleString()}件</strong></div>`;
+    document.getElementById("streamMetadataMessage").textContent=latest.finished_at
+      ?`最終再分類：${latest.finished_at}／取得元：${Object.entries(data.source_counts||{}).map(([k,v])=>`${k} ${v}件`).join("、")}`
+      :"まだ再分類を実行していません。";
+  }catch(error){errorState("streamMetadataStatus",error,"loadStreamMetadataStatus()");}
+}
+
+async function reclassifyStreams(){
+  if(!confirm("既存の全配信を再分類し、曜日も配信日から再計算しますか？"))return;
+  const button=document.getElementById("reclassifyStreamsButton");
+  const message=document.getElementById("streamMetadataMessage");
+  button.disabled=true; message.textContent="再分類しています...";
+  try{
+    const response=await fetch("/api/stream-metadata/reclassify",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recompute_weekday:true})});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"再分類に失敗しました。");
+    message.textContent=`${data.stream_count}配信を確認し、${data.changed_streams}配信の分類、${data.weekday_updates}件の曜日を更新しました。企画タグは合計${data.total_tags}件です。`;
+    await Promise.all([loadStreamMetadataStatus(),loadCategories(),loadStreams(),loadDashboard()]);
+    showToast("企画タグと曜日を再集計しました。","success");
+  }catch(error){
+    message.textContent=friendlyErrorText(error.message);
+    showToast("再分類に失敗しました。","error");
+  }finally{button.disabled=false;}
+}
+let streamRows=[];
+
+function isUncategorizedStream(row){
+  const category=String(row?.category||"").trim();
+  return !category||category==="未分類"||category==="その他"||category==="なし";
+}
+function populateStreamCategoryFilter(){
+  const select=document.getElementById("streamCategoryFilter");
+  const current=select.value||"all";
+  const categories=[...new Set(
+    streamRows
+      .flatMap(row=>Array.isArray(row.tags)&&row.tags.length?row.tags:[String(row.category||"").trim()])
+      .filter(category=>category&&!isUncategorizedStream({category}))
+  )].sort((a,b)=>a.localeCompare(b,"ja"));
+
+  select.innerHTML='<option value="all">すべて</option>'
+    +categories.map(category=>`<option value="${esc(category)}">${esc(category)}</option>`).join("");
+  select.value=categories.includes(current)?current:"all";
+}
+function readStreamFilters(){
+  return {
+    title:document.getElementById("streamTitleSearch").value.trim().toLowerCase(),
+    dateFrom:document.getElementById("streamDateFrom").value,
+    dateTo:document.getElementById("streamDateTo").value,
+    category:document.getElementById("streamCategoryFilter").value,
+    uncategorizedOnly:document.getElementById("streamUncategorizedOnly").checked,
+    sort:document.getElementById("streamSortSelect").value
+  };
+}
+function resetStreamFilters(){
+  document.getElementById("streamTitleSearch").value="";
+  document.getElementById("streamDateFrom").value="";
+  document.getElementById("streamDateTo").value="";
+  document.getElementById("streamCategoryFilter").value="all";
+  document.getElementById("streamUncategorizedOnly").checked=false;
+  document.getElementById("streamSortSelect").value="date_desc";
+  renderStreams();
+}
+function renderStreams(){
+  const filters=readStreamFilters();
+  let rows=streamRows.filter(row=>{
+    const title=String(row.title||"").toLowerCase();
+    const date=String(row.stream_date||"");
+    const category=String(row.category||"").trim();
+    const tags=Array.isArray(row.tags)?row.tags:[category];
+
+    if(filters.title&&!title.includes(filters.title))return false;
+    if(filters.dateFrom&&date<filters.dateFrom)return false;
+    if(filters.dateTo&&date>filters.dateTo)return false;
+    if(filters.uncategorizedOnly&&!isUncategorizedStream(row))return false;
+    if(!filters.uncategorizedOnly&&filters.category!=="all"&&!tags.includes(filters.category))return false;
+    return true;
+  });
+
+  const numeric=(row,key)=>Number(row?.[key]||0);
+  rows.sort((a,b)=>{
+    switch(filters.sort){
+      case "date_asc":
+        return String(a.stream_date||"").localeCompare(String(b.stream_date||""));
+      case "participants_desc":
+        return numeric(b,"participants")-numeric(a,"participants");
+      case "participants_asc":
+        return numeric(a,"participants")-numeric(b,"participants");
+      case "comments_desc":
+        return numeric(b,"comments")-numeric(a,"comments");
+      case "comments_asc":
+        return numeric(a,"comments")-numeric(b,"comments");
+      default:
+        return String(b.stream_date||"").localeCompare(String(a.stream_date||""));
+    }
+  });
+
+  const count=document.getElementById("streamResultCount");
+  count.innerHTML=`<strong>${rows.length.toLocaleString()}件</strong>を表示 ／ 全${streamRows.length.toLocaleString()}件`;
+
+  if(!rows.length){
+    emptyState("streamTable","条件に一致する配信はありません","日付・企画・タイトルなどの検索条件を変更してください。");
+    return;
+  }
+
+  document.getElementById("streamTable").innerHTML=table(
+    ["日付","曜日","企画","タイトル","参加人数","コメント"],
+    rows.map(r=>`<tr>
+      <td>${esc(r.stream_date)}</td>
+      <td>${esc(r.weekday)}</td>
+      <td><div class="category-tag-list">${(Array.isArray(r.tags)&&r.tags.length?r.tags:[r.category||"未分類"]).map(tag=>`<span class="badge">${esc(tag)}</span>`).join("")}</div></td>
+      <td><button class="link-button" onclick="openStream('${encodeURIComponent(r.video_id)}')">${esc(r.title)}</button></td>
+      <td>${Number(r.participants||0).toLocaleString()}</td>
+      <td>${Number(r.comments||0).toLocaleString()}</td>
+    </tr>`)
+  );
+}
+async function loadStreams(){
+  loadingState("streamTable","配信一覧を読み込み中");
+  try{
+    streamRows=await api("/api/streams?limit=1000");
+    populateStreamCategoryFilter();
+    renderStreams();
+  }catch(error){
+    errorState("streamTable",error,"loadStreams()");
+    const count=document.getElementById("streamResultCount");
+    if(count)count.textContent="取得に失敗しました";
+  }
+}
 let timer;
 let listenerRows=[];
 let listenerFilter="all";
 let listenerSort={key:"stream_count",direction:"desc"};
+let listenerAdvancedFilters={
+  minComments:0,
+  minParticipation:0,
+  lastSeen:"all"
+};
 
 function scoreClass(score){
   if(score>=85)return "score-high";
@@ -509,11 +2718,59 @@ function rankClass(rank){
   if(rank==="準常連")return "rank-semi";
   return "rank-spot";
 }
+function readListenerAdvancedFilters(){
+  const minComments=Math.max(0,Number(document.getElementById("listenerMinComments")?.value||0));
+  const minParticipation=Math.max(0,Number(document.getElementById("listenerMinParticipation")?.value||0));
+  const lastSeen=document.getElementById("listenerLastSeen")?.value||"all";
+  listenerAdvancedFilters={minComments,minParticipation,lastSeen};
+}
+function resetListenerFilters(){
+  document.getElementById("listenerSearch").value="";
+  document.getElementById("listenerMinComments").value="";
+  document.getElementById("listenerMinParticipation").value="0";
+  document.getElementById("listenerLastSeen").value="all";
+  listenerFilter="all";
+  listenerAdvancedFilters={minComments:0,minParticipation:0,lastSeen:"all"};
+  document.querySelectorAll("#listenerFilters .filter-btn").forEach(btn=>{
+    btn.classList.toggle("active",btn.dataset.filter==="all");
+  });
+  searchListenersImmediately();
+}
+async function searchListenersImmediately(){
+  clearTimeout(timer);
+  const q=document.getElementById("listenerSearch").value.trim();
+  loadingState("listenerResults","リスナーを検索中");
+  try{
+    listenerRows=await api(`/api/listeners?q=${encodeURIComponent(q)}`);
+    renderListeners();
+  }catch(error){
+    errorState("listenerResults",error,"searchListenersImmediately()");
+    const count=document.getElementById("listenerResultCount");
+    if(count)count.textContent="取得に失敗しました";
+  }
+}
 function renderListeners(){
+  readListenerAdvancedFilters();
   let rows=[...listenerRows];
   if(listenerFilter!=="all"){
     rows=rows.filter(r=>r.listener_type===listenerFilter||r.status===listenerFilter);
   }
+
+  rows=rows.filter(r=>{
+    const comments=Number(r.comment_count||0);
+    const participation=Number(r.participation_rate||0);
+    const absent=Number(r.days_absent);
+    if(comments<listenerAdvancedFilters.minComments)return false;
+    if(participation<listenerAdvancedFilters.minParticipation)return false;
+    if(listenerAdvancedFilters.lastSeen==="dormant"){
+      if(!Number.isFinite(absent)||absent<60)return false;
+    }else if(listenerAdvancedFilters.lastSeen!=="all"){
+      const limit=Number(listenerAdvancedFilters.lastSeen);
+      if(!Number.isFinite(absent)||absent>limit)return false;
+    }
+    return true;
+  });
+
   const {key,direction}=listenerSort;
   rows.sort((a,b)=>{
     let av=a[key]??"", bv=b[key]??"";
@@ -526,6 +2783,14 @@ function renderListeners(){
     ["display_name","表示名"],["listener_type","ランク"],["participation_rate","参加率"],
     ["comment_count","総コメント"],["fan_score","スコア"],["last_seen_date","最終参加"]
   ];
+  const resultCount=document.getElementById("listenerResultCount");
+  if(resultCount){
+    resultCount.innerHTML=`<strong>${rows.length.toLocaleString()}人</strong>を表示 ／ 全${listenerRows.length.toLocaleString()}人`;
+  }
+  if(!rows.length){
+    emptyState("listenerResults","条件に一致するリスナーはいません","検索条件を変更するか、リセットしてください。");
+    return;
+  }
   document.getElementById("listenerResults").innerHTML=`<div class="table-wrap"><table>
     <thead><tr>${headers.map(([k,l])=>`<th class="sortable" onclick="sortListeners('${k}')">${l}${arrow(k)}</th>`).join("")}</tr></thead>
     <tbody>${rows.map(r=>`<tr>
@@ -548,14 +2813,12 @@ function sortListeners(key){
 }
 async function searchListeners(){
   clearTimeout(timer);
-  timer=setTimeout(async()=>{
-    const q=document.getElementById("listenerSearch").value.trim();
-    listenerRows=await api(`/api/listeners?q=${encodeURIComponent(q)}`);
-    renderListeners();
-  },250);
+  timer=setTimeout(searchListenersImmediately,250);
 }
 
 async function loadCommunity(){
+  ["healthBox","combinations","newListeners","returningListeners","dormantListeners"].forEach(id=>loadingState(id,"コミュニティ情報を読み込み中"));
+  try{
   const d=await api("/api/community");
   const angle=Math.max(0,Math.min(100,d.health_score))*3.6;
 
@@ -608,24 +2871,43 @@ async function loadCommunity(){
         <strong>${(p.affinity*100).toFixed(0)}%</strong>
       </div>`).join("");
   }
+  }catch(error){
+    ["healthBox","combinations","newListeners","returningListeners","dormantListeners"].forEach(id=>errorState(id,error,"loadCommunity()"));
+  }
 }
 
 
 let moderationTimer;
 
+let moderationVisibleRows=[];
+
+function moderationCardClass(status){
+  if(status==="問題なし")return "status-safe";
+  if(status==="対応済み")return "status-handled";
+  return "status-unreviewed";
+}
+
 async function loadModeration(){
+  loadingState("moderationResults","モデレーション候補を読み込み中");
+  try{
   const q=document.getElementById("moderationSearch").value.trim();
   const status=document.getElementById("moderationStatusFilter").value;
   const category=document.getElementById("moderationCategoryFilter").value;
   const rows=await api(`/api/moderation?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}&limit=300`);
+  moderationVisibleRows=Array.isArray(rows)?rows:[];
 
-  if(!rows.length){
-    document.getElementById("moderationResults").innerHTML="<div class=\"empty-state\"><strong>要確認コメントはありません</strong><br>現在の条件では確認が必要な候補は見つかりませんでした。</div>";
+  const count=document.getElementById("moderationResultCount");
+  if(count){
+    count.innerHTML=`<strong>${moderationVisibleRows.length.toLocaleString()}件</strong>を表示`;
+  }
+
+  if(!moderationVisibleRows.length){
+    emptyState("moderationResults","確認が必要な候補はありません","現在の検索条件では候補がありません。");
     return;
   }
 
-  document.getElementById("moderationResults").innerHTML=rows.map(r=>`
-    <div class="mod-card flagged">
+  document.getElementById("moderationResults").innerHTML=moderationVisibleRows.map(r=>`
+    <div class="mod-card flagged ${moderationCardClass(r.review_status)}">
       <div class="mod-meta">
         <span>${esc(r.stream_date)}</span>
         <span>${esc(r.title)}</span>
@@ -637,6 +2919,49 @@ async function loadModeration(){
       <p class="muted">検知：${esc(r.detected_label||"手動登録")} / ${esc(r.detected_rule||"-")}</p>
       <button class="link-button" onclick="openModeration('${encodeURIComponent(r.message_id)}')">前後の文脈と判定を開く</button>
     </div>`).join("");
+  }catch(error){
+    errorState("moderationResults",error,"loadModeration()");
+    const count=document.getElementById("moderationResultCount");
+    if(count)count.textContent="取得に失敗しました";
+  }
+}
+
+function resetModerationFilters(){
+  document.getElementById("moderationSearch").value="";
+  document.getElementById("moderationStatusFilter").value="未確認";
+  document.getElementById("moderationCategoryFilter").value="";
+  loadModeration();
+}
+
+async function markVisibleModerationSafe(){
+  if(!moderationVisibleRows.length){
+    alert("表示中の候補がありません。");
+    return;
+  }
+  if(!confirm(`表示中の${moderationVisibleRows.length}件を「問題なし」にしますか？`))return;
+
+  let success=0;
+  let failed=0;
+  for(const row of moderationVisibleRows){
+    try{
+      const response=await fetch("/api/moderation/review",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          message_id:row.message_id,
+          status:"問題なし",
+          category:row.review_category||"",
+          memo:row.memo||""
+        })
+      });
+      if(response.ok)success++;
+      else failed++;
+    }catch(error){
+      failed++;
+    }
+  }
+  alert(`問題なし：${success}件${failed?`／失敗：${failed}件`:""}`);
+  loadModeration();
 }
 
 function scheduleModerationLoad(){
@@ -736,7 +3061,499 @@ async function loadSettings(){
   settingChatDir.value=d.chat_data_dir||"";
   settingPort.value=d.port||8765;
   settingThemeColor.value=d.theme_color||"#24324A";
+  loadBackupList();
+  loadDiagnostics();
 }
+
+let latestDiagnostics=null;
+
+function diagnosticStatus(ok,warning=false){
+  if(ok)return '<span class="diagnostic-status ok">正常</span>';
+  return warning
+    ?'<span class="diagnostic-status warn">要確認</span>'
+    :'<span class="diagnostic-status error">エラー</span>';
+}
+function diagnosticRow(label,value){
+  return `<div class="diagnostic-row"><span>${esc(label)}</span><strong>${value}</strong></div>`;
+}
+function chatStatusText(state){
+  if(!state)return "不明";
+  if(state.running)return `実行中（${Number(state.current||0)} / ${Number(state.total||0)||"?"}）`;
+  if(state.status==="completed")return "完了";
+  if(state.status==="failed")return "失敗";
+  if(state.status==="cancelled")return "中止";
+  return state.message||"待機中";
+}
+async function loadDiagnostics(){
+  const message=document.getElementById("diagnosticsMessage");
+  const summary=document.getElementById("diagnosticsSummary");
+  const details=document.getElementById("diagnosticsDetails");
+  const errors=document.getElementById("diagnosticsErrors");
+  message.textContent="診断情報を確認中...";
+  try{
+    const data=await api("/api/diagnostics");
+    latestDiagnostics=data;
+    document.getElementById("diagnosticsRaw").value=JSON.stringify(data,null,2);
+
+    const db=data.database||{};
+    const runtime=data.runtime||{};
+    const storage=data.storage||{};
+    const chat=data.chat_download||{};
+    const app=data.application||{};
+
+    summary.innerHTML=`
+      <div class="diagnostic-kpi"><span>DB整合性</span><strong>${esc(db.integrity||"不明")}</strong></div>
+      <div class="diagnostic-kpi"><span>配信データ</span><strong>${Number(db.stream_count||0).toLocaleString()}件</strong></div>
+      <div class="diagnostic-kpi"><span>チャットJSON</span><strong>${Number(storage.chat_json_count||0).toLocaleString()}件</strong></div>
+      <div class="diagnostic-kpi"><span>直近エラー</span><strong>${Number((data.recent_errors||[]).length).toLocaleString()}件</strong></div>`;
+
+    details.innerHTML=`
+      <div class="diagnostic-card">
+        <h3>データベース</h3>
+        ${diagnosticRow("状態",diagnosticStatus(db.exists&&db.integrity==="ok",db.exists&&db.integrity!=="ok"))}
+        ${diagnosticRow("整合性",esc(db.integrity||"不明"))}
+        ${diagnosticRow("ファイルサイズ",esc(db.size_text||"0 B"))}
+        ${diagnosticRow("配信数",Number(db.stream_count||0).toLocaleString())}
+        ${diagnosticRow("リスナー数",Number(db.listener_count||0).toLocaleString())}
+        ${diagnosticRow("保存場所",esc(db.path||""))}
+        ${db.error?diagnosticRow("エラー",esc(db.error)):""}
+      </div>
+      <div class="diagnostic-card">
+        <h3>実行環境</h3>
+        ${diagnosticRow("Python",`${diagnosticStatus(runtime.python?.available)} ${esc(runtime.python?.version||"不明")}`)}
+        ${diagnosticRow("Python本体",esc(runtime.python?.executable||""))}
+        ${diagnosticRow("yt-dlp",`${diagnosticStatus(runtime.yt_dlp?.available,true)} ${esc(runtime.yt_dlp?.version||runtime.yt_dlp?.error||"不明")}`)}
+        ${diagnosticRow("index.html",diagnosticStatus(Boolean(app.index_exists)))}
+        ${diagnosticRow("設定ファイル",diagnosticStatus(Boolean(app.config_exists),true))}
+        ${diagnosticRow("モデレーションルール",diagnosticStatus(Boolean(app.moderation_rules_exists),true))}
+      </div>
+      <div class="diagnostic-card">
+        <h3>保存先</h3>
+        ${diagnosticRow("チャットJSON",`${diagnosticStatus(Boolean(storage.chat_data_dir_exists),true)} ${esc(storage.chat_data_dir||"")}`)}
+        ${diagnosticRow("週間予定",`${diagnosticStatus(Boolean(storage.weekly_schedule_dir_exists),true)} ${esc(storage.weekly_schedule_dir||"")}`)}
+        ${diagnosticRow("バックアップ",`${diagnosticStatus(Boolean(storage.backup_dir_exists),true)} ${esc(storage.backup_dir||"")}`)}
+        ${diagnosticRow("ログ候補",(storage.log_locations||[]).length?(storage.log_locations||[]).map(esc).join("<br>"):"専用ログファイルは未作成")}
+      </div>
+      <div class="diagnostic-card">
+        <h3>YouTube取得</h3>
+        ${diagnosticRow("状態",esc(chatStatusText(chat)))}
+        ${diagnosticRow("成功",Number(chat.success||0).toLocaleString())}
+        ${diagnosticRow("失敗",Number(chat.failed||0).toLocaleString())}
+        ${diagnosticRow("処理中",esc(chat.current_title||"なし"))}
+        ${diagnosticRow("最終メッセージ",esc(chat.message||""))}
+      </div>`;
+
+    const recentErrors=data.recent_errors||[];
+    errors.innerHTML=recentErrors.length
+      ?`<h3>直近のWeb APIエラー</h3>${recentErrors.map(item=>`
+        <div class="diagnostic-error-item">
+          <strong>${esc(item.occurred_at)}・${esc(item.path)}</strong>
+          <code>${esc(item.type)}: ${esc(item.message)}</code>
+        </div>`).join("")}`
+      :'<div class="diagnostic-card"><strong>直近のWeb APIエラーはありません。</strong></div>';
+
+    message.textContent=`${data.checked_at||""} 時点の診断情報です。`;
+  }catch(error){
+    const text=friendlyErrorText(error.message);
+    message.textContent=text;
+    summary.innerHTML="";
+    details.innerHTML=`<div class="diagnostic-card">${esc(text)}</div>`;
+    errors.innerHTML="";
+  }
+}
+async function copyDiagnostics(){
+  const raw=document.getElementById("diagnosticsRaw").value;
+  if(!raw){
+    await loadDiagnostics();
+  }
+  const value=document.getElementById("diagnosticsRaw").value;
+  if(!value)return;
+  try{
+    await navigator.clipboard.writeText(value);
+    showToast("診断情報をコピーしました。","success");
+  }catch(error){
+    const textarea=document.getElementById("diagnosticsRaw");
+    textarea.focus();
+    textarea.select();
+    const copied=document.execCommand("copy");
+    showToast(copied?"診断情報をコピーしました。":"コピーできませんでした。",copied?"success":"error");
+  }
+}
+
+function formatFileSize(bytes){
+  const value=Number(bytes||0);
+  if(value<1024)return `${value} B`;
+  if(value<1024*1024)return `${(value/1024).toFixed(1)} KB`;
+  if(value<1024*1024*1024)return `${(value/1024/1024).toFixed(1)} MB`;
+  return `${(value/1024/1024/1024).toFixed(2)} GB`;
+}
+async function loadBackupList(){
+  const container=document.getElementById("backupList");
+  if(!container)return;
+  container.innerHTML='<div class="muted">バックアップ履歴を読み込み中...</div>';
+  try{
+    const data=await api("/api/backups");
+    const items=data.backups||[];
+    container.innerHTML=items.length?items.map(item=>`
+      <div class="backup-list-item">
+        <span>${esc(item.filename)}</span>
+        <span class="muted">${esc(item.created_at)}・${formatFileSize(item.size_bytes)}</span>
+      </div>`).join(""):'<div class="muted">バックアップ履歴はありません。</div>';
+  }catch(error){
+    container.innerHTML=`<div class="muted">${esc(friendlyErrorText(error.message))}</div>`;
+  }
+}
+function updateBackupRestoreName(){
+  const file=document.getElementById("backupRestoreFile").files[0];
+  document.getElementById("backupRestoreName").textContent=file?file.name:"未選択";
+}
+async function downloadFullBackup(){
+  const includeChat=document.getElementById("backupIncludeChat").checked?"1":"0";
+  const message=document.getElementById("backupMessage");
+  message.textContent="バックアップZIPを作成中です。チャットJSONを含む場合は時間がかかります...";
+  try{
+    const response=await fetch(`/api/backup/download?include_chat=${includeChat}`);
+    if(!response.ok){
+      const data=await response.json();
+      throw new Error(data.error||"バックアップ作成に失敗しました。");
+    }
+    const blob=await response.blob();
+    const disposition=response.headers.get("Content-Disposition")||"";
+    const matched=disposition.match(/filename="([^"]+)"/);
+    const filename=matched?matched[1]:"VTuberAnalytics_backup.zip";
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");
+    link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+    message.textContent=`バックアップを作成しました：${filename}`;
+    showToast("全データのバックアップを作成しました。","success");
+    loadBackupList();
+  }catch(error){
+    const text=friendlyErrorText(error.message);
+    message.textContent=text;showToast(text,"error");
+  }
+}
+async function restoreFullBackup(){
+  const input=document.getElementById("backupRestoreFile");
+  const file=input.files[0];
+  const message=document.getElementById("backupMessage");
+  if(!file){message.textContent="復元するZIPを選択してください。";return;}
+  if(!confirm(`「${file.name}」から復元します。現在のデータは復元前に自動バックアップされます。続行しますか？`))return;
+  message.textContent="復元中です。画面を閉じないでください...";
+  try{
+    const response=await fetch("/api/backup/restore",{method:"POST",headers:{"Content-Type":"application/zip"},body:file});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"復元に失敗しました。");
+    message.textContent=`復元完了。安全バックアップ：${data.safety_backup}。アプリを再起動してください。`;
+    showToast("復元が完了しました。アプリを再起動してください。","success");
+    input.value="";updateBackupRestoreName();loadBackupList();
+  }catch(error){
+    const text=friendlyErrorText(error.message);
+    message.textContent=text;showToast(text,"error");
+  }
+}
+
+
+async function loadYouTubeStatus(){
+  const box=document.getElementById("youtubeConnectionStatus");
+  if(!box)return;
+  box.textContent="YouTube接続状態を確認しています...";
+  try{
+    const data=await api("/api/youtube/status");
+    const settings=data.settings||{};
+    document.getElementById("youtubeClientId").value=settings.client_id||"";
+    document.getElementById("youtubeRedirectUri").value=settings.redirect_uri||"http://localhost:8765/api/youtube/oauth/callback";
+    const channel=data.channel||{};
+    if(data.connected){
+      box.innerHTML=`<strong>接続済み：</strong>${esc(channel.title||"YouTubeチャンネル")}<br><span class="muted">チャンネルID：${esc(channel.channel_id||"不明")}</span>`;
+    }else if(data.configured){
+      box.innerHTML="<strong>OAuth設定済み・Google未接続</strong><br><span class='muted'>「Googleアカウントを接続」を押してください。</span>";
+    }else{
+      box.innerHTML="<strong>未設定</strong><br><span class='muted'>クライアントID、シークレット、リダイレクトURIを登録してください。</span>";
+    }
+    if(data.last_sync){
+      document.getElementById("youtubeSyncResult").textContent=`最終同期：${data.last_sync.synced_at}／ライブ配信 ${data.last_sync.live_streams_found}件／新規 ${data.last_sync.inserted}件／更新 ${data.last_sync.updated}件`;
+    }
+  }catch(error){box.textContent=friendlyErrorText(error.message);}
+}
+async function saveYouTubeOAuthSettings(){
+  const message=document.getElementById("youtubeSyncResult");
+  message.textContent="OAuth設定を保存しています...";
+  try{
+    const response=await fetch("/api/youtube/settings",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      client_id:document.getElementById("youtubeClientId").value.trim(),
+      client_secret:document.getElementById("youtubeClientSecret").value,
+      redirect_uri:document.getElementById("youtubeRedirectUri").value.trim()
+    })});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"OAuth設定を保存できませんでした。");
+    document.getElementById("youtubeClientSecret").value="";
+    message.textContent="OAuth設定を保存しました。";
+    await loadYouTubeStatus();
+    return true;
+  }catch(error){message.textContent=friendlyErrorText(error.message);return false;}
+}
+async function connectYouTubeAccount(){
+  if(!await saveYouTubeOAuthSettings())return;
+  try{
+    const data=await api("/api/youtube/oauth/start");
+    if(!data.authorization_url)throw new Error("Google認証URLを取得できませんでした。");
+    location.href=data.authorization_url;
+  }catch(error){document.getElementById("youtubeSyncResult").textContent=friendlyErrorText(error.message);}
+}
+async function syncYouTubeStreams(){
+  const button=document.getElementById("youtubeSyncButton");
+  const result=document.getElementById("youtubeSyncResult");
+  button.disabled=true;result.textContent="YouTubeから配信情報を同期しています...";
+  try{
+    const response=await fetch("/api/youtube/sync",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({max_pages:20})});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"同期に失敗しました。");
+    result.textContent=`同期完了：${data.videos_checked}動画を確認し、ライブ配信${data.live_streams_found}件、新規${data.inserted}件、更新${data.updated}件でした。`;
+    await Promise.all([loadYouTubeStatus(),loadStreams(),loadCategories(),loadDashboard()]);
+    showToast("YouTube配信情報を同期しました。","success");
+  }catch(error){result.textContent=friendlyErrorText(error.message);showToast("YouTube同期に失敗しました。","error");}
+  finally{button.disabled=false;}
+}
+
+
+let backgroundJobsPollTimer=null;
+
+function formatJobDate(value){
+  if(!value)return "未実行";
+  try{return new Date(value).toLocaleString("ja-JP");}
+  catch(error){return value;}
+}
+function renderBackgroundJobCard(job,runningJobs){
+  const running=(runningJobs||[]).includes(job.name);
+  const status=`前回成功：${formatJobDate(job.last_success_at)}<br>次回予定：${formatJobDate(job.next_run_at)}${running?"<br><span class='job-status-running'>実行中</span>":""}`;
+  const targets={
+    youtube_sync:"backgroundYoutubeStatus",
+    reclassify:"backgroundReclassifyStatus",
+    backup:"backgroundBackupStatus"
+  };
+  const element=document.getElementById(targets[job.name]);
+  if(element)element.innerHTML=status;
+}
+function renderBackgroundHistory(history){
+  const container=document.getElementById("backgroundJobsHistory");
+  if(!container)return;
+  if(!Array.isArray(history)||!history.length){
+    container.innerHTML=uiStateMarkup("empty","実行履歴はありません","定期処理または手動実行後に表示されます。");
+    return;
+  }
+  container.innerHTML=table(
+    ["処理","状態","開始","所要時間","実行理由","結果・エラー"],
+    history.map(item=>{
+      const labels={youtube_sync:"YouTube同期",reclassify:"再分類",backup:"バックアップ"};
+      const statusClass=item.status==="success"?"job-status-success":item.status==="error"?"job-status-error":"job-status-running";
+      let detail="";
+      if(item.status==="error")detail=item.error||"不明なエラー";
+      else if(item.job==="youtube_sync")detail=`新規 ${item.result?.inserted||0}件／更新 ${item.result?.updated||0}件`;
+      else if(item.job==="reclassify")detail=`変更 ${item.result?.changed_streams||0}件／曜日 ${item.result?.weekday_updates||0}件`;
+      else if(item.job==="backup")detail=item.result?.filename||"バックアップ作成";
+      return `<tr>
+        <td>${esc(labels[item.job]||item.job)}</td>
+        <td class="${statusClass}">${esc(item.status)}</td>
+        <td>${esc(formatJobDate(item.started_at))}</td>
+        <td>${Number(item.duration_seconds||0).toFixed(1)}秒</td>
+        <td>${esc(item.reason||"")}</td>
+        <td>${esc(detail)}</td>
+      </tr>`;
+    })
+  );
+}
+async function loadBackgroundJobStatus(){
+  const message=document.getElementById("backgroundJobsMessage");
+  if(!message)return;
+  message.textContent="定期処理の状態を確認しています...";
+  try{
+    const data=await api("/api/background-jobs/status");
+    const config=data.config||{};
+    document.getElementById("backgroundJobsEnabled").checked=Boolean(config.enabled);
+    document.getElementById("backgroundYoutubeEnabled").checked=Boolean(config.youtube_sync_enabled);
+    document.getElementById("backgroundYoutubeInterval").value=config.youtube_sync_interval_minutes||180;
+    document.getElementById("backgroundReclassifyEnabled").checked=Boolean(config.reclassify_enabled);
+    document.getElementById("backgroundReclassifyInterval").value=config.reclassify_interval_minutes||360;
+    document.getElementById("backgroundBackupEnabled").checked=Boolean(config.backup_enabled);
+    document.getElementById("backgroundBackupInterval").value=config.backup_interval_minutes||1440;
+    document.getElementById("backgroundBackupChat").checked=Boolean(config.backup_include_chat_data);
+    (data.jobs||[]).forEach(job=>renderBackgroundJobCard(job,data.running_jobs||[]));
+    renderBackgroundHistory(data.history||[]);
+    message.textContent=data.thread_alive
+      ?"バックグラウンド処理は起動中です。"
+      :"バックグラウンド処理が停止しています。Webアプリを再起動してください。";
+  }catch(error){message.textContent=friendlyErrorText(error.message);}
+}
+async function saveBackgroundJobSettings(){
+  const message=document.getElementById("backgroundJobsMessage");
+  message.textContent="設定を保存しています...";
+  try{
+    const response=await fetch("/api/background-jobs/settings",{
+      method:"POST",
+      credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        enabled:document.getElementById("backgroundJobsEnabled").checked,
+        youtube_sync_enabled:document.getElementById("backgroundYoutubeEnabled").checked,
+        youtube_sync_interval_minutes:Number(document.getElementById("backgroundYoutubeInterval").value),
+        reclassify_enabled:document.getElementById("backgroundReclassifyEnabled").checked,
+        reclassify_interval_minutes:Number(document.getElementById("backgroundReclassifyInterval").value),
+        backup_enabled:document.getElementById("backgroundBackupEnabled").checked,
+        backup_interval_minutes:Number(document.getElementById("backgroundBackupInterval").value),
+        backup_include_chat_data:document.getElementById("backgroundBackupChat").checked
+      })
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"定期処理設定を保存できませんでした。");
+    message.textContent="定期処理設定を保存しました。";
+    await loadBackgroundJobStatus();
+  }catch(error){message.textContent=friendlyErrorText(error.message);}
+}
+async function runBackgroundJob(job){
+  const message=document.getElementById("backgroundJobsMessage");
+  message.textContent="処理を開始しています...";
+  try{
+    const response=await fetch("/api/background-jobs/run",{
+      method:"POST",
+      credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({job})
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"処理を開始できませんでした。");
+    message.textContent="処理を受け付けました。実行履歴へ反映されるまで少し待ってください。";
+    setTimeout(loadBackgroundJobStatus,1200);
+  }catch(error){message.textContent=friendlyErrorText(error.message);}
+}
+function startBackgroundJobPolling(){
+  if(backgroundJobsPollTimer)clearInterval(backgroundJobsPollTimer);
+  backgroundJobsPollTimer=setInterval(()=>{
+    const section=document.getElementById("settings");
+    if(section&&section.classList.contains("active"))loadBackgroundJobStatus();
+  },10000);
+}
+
+
+function formatBytes(value){
+  let size=Number(value||0);
+  const units=["B","KB","MB","GB"];
+  let index=0;
+  while(size>=1024&&index<units.length-1){size/=1024;index++;}
+  return `${index===0?Math.round(size):size.toFixed(1)} ${units[index]}`;
+}
+function renderAuditHistory(items){
+  const container=document.getElementById("recoveryAuditHistory");
+  if(!container)return;
+  if(!Array.isArray(items)||!items.length){
+    container.innerHTML=uiStateMarkup("empty","操作履歴はありません","");
+    return;
+  }
+  container.innerHTML=table(
+    ["日時","操作","状態","実行者","詳細"],
+    items.map(item=>`<tr>
+      <td>${esc(formatJobDate(item.occurred_at))}</td>
+      <td>${esc(item.action||"")}</td>
+      <td class="${item.status==="success"?"recovery-ok":"recovery-error"}">${esc(item.status||"")}</td>
+      <td>${esc(item.actor||"system")} (${esc(item.role||"system")})</td>
+      <td><code>${esc(JSON.stringify(item.details||{}))}</code></td>
+    </tr>`)
+  );
+}
+async function loadRecoveryStatus(){
+  const message=document.getElementById("recoveryMessage");
+  if(!message)return;
+  message.textContent="復旧状態を確認しています...";
+  try{
+    const data=await api("/api/recovery/status");
+    const latest=data.latest_backup;
+    document.getElementById("recoveryBackupCount").textContent=`${Number(data.backup_count||0)}件`;
+    document.getElementById("recoveryLatestStatus").textContent=!latest
+      ?"なし"
+      :latest.ok?"正常":"要確認";
+    document.getElementById("recoveryLatestStatus").className=latest&&latest.ok?"recovery-ok":"recovery-error";
+    document.getElementById("recoveryDatabaseSize").textContent=formatBytes(data.database_size_bytes);
+    document.getElementById("recoveryGenerations").textContent=`${data.config?.max_backup_generations||20}世代`;
+    document.getElementById("recoveryMaxGenerations").value=data.config?.max_backup_generations||20;
+    document.getElementById("recoveryVerifyAfterCreate").checked=Boolean(data.config?.verify_after_create);
+    renderAuditHistory(data.audit||[]);
+    if(latest){
+      document.getElementById("recoveryVerification").innerHTML=table(
+        ["ファイル","ZIP","識別情報","DB","配信数","コメント数","SHA-256"],
+        [`<tr>
+          <td>${esc(latest.filename||"")}</td>
+          <td>${latest.valid_zip?"正常":"異常"}</td>
+          <td>${latest.manifest_valid?"正常":"異常"}</td>
+          <td>${latest.database_valid?"正常":"異常"}</td>
+          <td>${Number(latest.stream_count||0)}</td>
+          <td>${Number(latest.message_count||0)}</td>
+          <td><code>${esc((latest.sha256||"").slice(0,16))}…</code></td>
+        </tr>`]
+      );
+    }else{
+      emptyState("recoveryVerification","バックアップがありません","");
+    }
+    message.textContent="復旧状態を更新しました。";
+  }catch(error){message.textContent=friendlyErrorText(error.message);}
+}
+async function saveRecoverySettings(){
+  const message=document.getElementById("recoveryMessage");
+  message.textContent="復旧設定を保存しています...";
+  try{
+    const response=await fetch("/api/recovery/settings",{
+      method:"POST",
+      credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        max_backup_generations:Number(document.getElementById("recoveryMaxGenerations").value),
+        verify_after_create:document.getElementById("recoveryVerifyAfterCreate").checked
+      })
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"復旧設定を保存できませんでした。");
+    message.textContent="復旧設定を保存しました。";
+    await loadRecoveryStatus();
+  }catch(error){message.textContent=friendlyErrorText(error.message);}
+}
+async function verifyAllBackups(){
+  const message=document.getElementById("recoveryMessage");
+  message.textContent="全バックアップを検証しています...";
+  try{
+    const data=await api("/api/recovery/verify-all");
+    const items=data.items||[];
+    document.getElementById("recoveryVerification").innerHTML=table(
+      ["ファイル","判定","ZIP","識別情報","DB","配信数","コメント数","エラー"],
+      items.map(item=>`<tr>
+        <td>${esc(item.filename||"")}</td>
+        <td class="${item.ok?"recovery-ok":"recovery-error"}">${item.ok?"正常":"異常"}</td>
+        <td>${item.valid_zip?"正常":"異常"}</td>
+        <td>${item.manifest_valid?"正常":"異常"}</td>
+        <td>${item.database_valid?"正常":"異常"}</td>
+        <td>${Number(item.stream_count||0)}</td>
+        <td>${Number(item.message_count||0)}</td>
+        <td>${esc((item.errors||[]).join("／"))}</td>
+      </tr>`)
+    );
+    message.textContent=`${items.length}件を検証しました。`;
+  }catch(error){message.textContent=friendlyErrorText(error.message);}
+}
+async function cleanupBackups(){
+  if(!confirm("設定した保持世代数を超える古いバックアップを削除しますか？"))return;
+  const message=document.getElementById("recoveryMessage");
+  message.textContent="古いバックアップを整理しています...";
+  try{
+    const response=await fetch("/api/recovery/cleanup",{
+      method:"POST",
+      credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:"{}"
+    });
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||"バックアップを整理できませんでした。");
+    message.textContent=`${data.deleted_count||0}件を削除し、${data.kept||0}件を保持しました。`;
+    await Promise.all([loadRecoveryStatus(),loadBackupList()]);
+  }catch(error){message.textContent=friendlyErrorText(error.message);}
+}
+
 async function saveSettings(){
   const r=await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
     channel_name:settingChannelName.value,
@@ -861,7 +3678,31 @@ async function openStream(idEnc){
   openModal();
 }
 function openModal(){document.getElementById("detailModal").classList.add("open")}function closeModal(){document.getElementById("detailModal").classList.remove("open")}
-document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",async()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");if(b.dataset.tab==="listeners")searchListeners();if(b.dataset.tab==="categories")loadCategories();if(b.dataset.tab==="streams")loadStreams();if(b.dataset.tab==="community")loadCommunity();if(b.dataset.tab==="moderation")loadModeration();if(b.dataset.tab==="settings")loadSettings()}));
+async function openAppTab(tabId){
+  const button=document.querySelector(`nav button[data-tab="${tabId}"]`);
+  if(!button)return;
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
+  button.classList.add("active");
+  document.getElementById(tabId).classList.add("active");
+  document.getElementById("mainNav")?.classList.remove("open");
+  document.getElementById("navToggle")?.setAttribute("aria-expanded","false");
+  if(tabId==="listeners")await searchListeners();
+  if(tabId==="categories"){await loadCategories();await loadStreamMetadataStatus();}
+  if(tabId==="streams")await loadStreams();
+  if(tabId==="community")await loadCommunity();
+  if(tabId==="weekly-schedule")await loadWeeklySchedule();
+  if(tabId==="moderation")await loadModeration();
+  if(tabId==="settings"){await loadSettings();await loadYouTubeStatus();await loadBackgroundJobStatus();await loadRecoveryStatus();startBackgroundJobPolling();}
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.getElementById("navToggle").addEventListener("click",()=>{
+  const nav=document.getElementById("mainNav");
+  const isOpen=nav.classList.toggle("open");
+  document.getElementById("navToggle").setAttribute("aria-expanded",String(isOpen));
+});
+document.querySelectorAll("[data-open-tab]").forEach(button=>button.addEventListener("click",()=>openAppTab(button.dataset.openTab)));
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>openAppTab(b.dataset.tab)));
 document.getElementById("aboutButton").addEventListener("click",openAbout);
 document.getElementById("settingsGear").addEventListener("click",()=>{
   document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
@@ -869,7 +3710,17 @@ document.getElementById("settingsGear").addEventListener("click",()=>{
   document.getElementById("settings").classList.add("active");
   loadSettings();
 });
+["streamTitleSearch","streamDateFrom","streamDateTo"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",renderStreams);
+});
+["streamCategoryFilter","streamUncategorizedOnly","streamSortSelect"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",renderStreams);
+});
 document.getElementById("listenerSearch").addEventListener("input",searchListeners);
+["listenerMinComments","listenerMinParticipation","listenerLastSeen"].forEach(id=>{
+  const element=document.getElementById(id);
+  element.addEventListener(id==="listenerMinComments"?"input":"change",renderListeners);
+});
 document.getElementById("settingThemeColor").addEventListener("input",e=>{
   applyTheme(e.target.value);
 });
@@ -920,6 +3771,144 @@ function friendlyErrorText(value){
   return text || "処理に失敗しました。";
 }
 
+
+let authSetupMode=false;
+let currentAuthUser=null;
+
+function showAuthOverlay(setupMode=false){
+  authSetupMode=Boolean(setupMode);
+  document.body.classList.add("auth-locked");
+  const overlay=document.getElementById("authOverlay");
+  overlay.hidden=false;
+  document.getElementById("authTitle").textContent=authSetupMode
+    ?"最初の管理者を作成"
+    :"VTuber Analytics ログイン";
+  document.getElementById("authDescription").textContent=authSetupMode
+    ?"初回のみ、管理者アカウントを作成します。パスワードは10文字以上にしてください。"
+    :"分析データを保護するため、ログインしてください。";
+  document.getElementById("authDisplayNameField").hidden=!authSetupMode;
+  document.getElementById("authConfirmField").hidden=!authSetupMode;
+  document.getElementById("authSubmitButton").textContent=authSetupMode
+    ?"管理者を作成"
+    :"ログイン";
+  document.getElementById("authPassword").autocomplete=authSetupMode
+    ?"new-password"
+    :"current-password";
+  document.getElementById("authError").textContent="";
+  setTimeout(()=>document.getElementById("authUsername").focus(),50);
+}
+
+function hideAuthOverlay(){
+  document.body.classList.remove("auth-locked");
+  document.getElementById("authOverlay").hidden=true;
+}
+
+function applyAuthUser(user){
+  currentAuthUser=user||null;
+  const box=document.getElementById("authUserBox");
+  const label=document.getElementById("authUserLabel");
+  if(!user){
+    box.hidden=true;
+    return;
+  }
+  box.hidden=false;
+  label.innerHTML=`<strong>${esc(user.display_name)}</strong><br>${esc(user.role_label)}`;
+  const isAdmin=user.role==="admin";
+  const canModerate=user.role==="admin"||user.role==="moderator";
+  document.getElementById("settingsGear").hidden=!isAdmin;
+  const moderationNav=document.querySelector('nav button[data-tab="moderation"]');
+  if(moderationNav)moderationNav.hidden=!canModerate;
+}
+
+async function checkAuth(){
+  try{
+    const response=await fetch("/api/auth/status",{cache:"no-store",credentials:"same-origin"});
+    const data=await response.json();
+    if(data.authenticated){
+      applyAuthUser(data.user);
+      hideAuthOverlay();
+      return true;
+    }
+    showAuthOverlay(Boolean(data.setup_required));
+    return false;
+  }catch(error){
+    showAuthOverlay(false);
+    document.getElementById("authError").textContent="認証状態を確認できません。Webアプリが起動しているか確認してください。";
+    return false;
+  }
+}
+
+async function submitAuth(){
+  const username=document.getElementById("authUsername").value.trim();
+  const password=document.getElementById("authPassword").value;
+  const errorBox=document.getElementById("authError");
+  errorBox.textContent="";
+  if(!username||!password){
+    errorBox.textContent="ユーザー名とパスワードを入力してください。";
+    return;
+  }
+  let endpoint="/api/auth/login";
+  let payload={username,password};
+  if(authSetupMode){
+    const displayName=document.getElementById("authDisplayName").value.trim();
+    const confirmation=document.getElementById("authPasswordConfirm").value;
+    if(password!==confirmation){
+      errorBox.textContent="確認用パスワードが一致しません。";
+      return;
+    }
+    endpoint="/api/auth/setup";
+    payload={username,password,display_name:displayName};
+  }
+  const button=document.getElementById("authSubmitButton");
+  button.disabled=true;
+  try{
+    const response=await fetch(endpoint,{
+      method:"POST",
+      credentials:"same-origin",
+      headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json"
+      },
+      body:JSON.stringify(payload)
+    });
+    const responseText=await response.text();
+    let data={};
+    try{
+      data=responseText?JSON.parse(responseText):{};
+    }catch(parseError){
+      throw new Error(
+        `管理者作成APIがJSON以外を返しました（HTTP ${response.status}）：`
+        +`${responseText.slice(0,160)||"応答なし"}`
+      );
+    }
+    if(!response.ok){
+      throw new Error(
+        data.error
+        ||`認証に失敗しました（HTTP ${response.status} / ${data.path||endpoint}）`
+      );
+    }
+    applyAuthUser(data.user);
+    hideAuthOverlay();
+    document.getElementById("authPassword").value="";
+    document.getElementById("authPasswordConfirm").value="";
+    await Promise.all([loadAppInfo(),loadDashboard()]);
+    maybeShowWelcome();
+  }catch(error){
+    errorBox.textContent=friendlyErrorText(error.message);
+  }finally{
+    button.disabled=false;
+  }
+}
+
+async function logoutAuth(){
+  try{
+    await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin"});
+  }finally{
+    applyAuthUser(null);
+    showAuthOverlay(false);
+  }
+}
+
 async function loadAppInfo(){
   try{
     const info=await api("/api/app-info");
@@ -948,9 +3937,31 @@ async function loadAppInfo(){
     applyTheme("#24324A");
   }
 }
-loadAppInfo();
-loadDashboard();
-maybeShowWelcome();
+window.addEventListener("DOMContentLoaded", async () => {
+  ["authUsername","authPassword","authPasswordConfirm"].forEach(id=>{
+    const element=document.getElementById(id);
+    if(element)element.addEventListener("keydown",event=>{
+      if(event.key==="Enter")submitAuth();
+    });
+  });
+  const authenticated=await checkAuth();
+  if(authenticated){
+    if(new URLSearchParams(location.search).get("youtube")==="connected"){
+      showToast("YouTubeアカウントを接続しました。","success");
+      history.replaceState({},document.title,"/");
+    }
+    await Promise.all([
+      loadAppInfo().catch(console.error),
+      loadDashboard().catch(console.error)
+    ]);
+    maybeShowWelcome();
+  }
+});
+
+document.addEventListener("DOMContentLoaded",async()=>{
+  const authenticated=await checkAuth();
+  if(authenticated)loadChatDownloadStatus();
+});
 </script>
 
 <footer style="text-align:center;padding:24px;color:#667085">
@@ -962,9 +3973,9 @@ maybeShowWelcome();
 <h2>VTuber Analyticsへようこそ</h2>
 <p>ライブチャットから、配信とコミュニティの変化を確認できます。</p>
 <div class="welcome-steps">
-<div class="welcome-step"><strong>1. 取得</strong>配信後にライブチャットを取得します。</div>
-<div class="welcome-step"><strong>2. 更新</strong>データ更新BATで分析データを反映します。</div>
-<div class="welcome-step"><strong>3. 確認</strong>ホームから最近の変化を確認します。</div>
+<div class="welcome-step"><strong>1. 取得</strong><code>2_チャット取得.bat</code>を実行します。</div>
+<div class="welcome-step"><strong>2. 更新</strong><code>3_データ更新.bat</code>を実行します。</div>
+<div class="welcome-step"><strong>3. 確認</strong><code>4_Webアプリ起動.bat</code>を実行します。</div>
 </div>
 <div class="report-section report-good"><strong>最初に見る場所</strong>
 <p>まずはホームの「今日の分析」を確認し、次に気になる配信やリスナーを開いてください。</p></div>
@@ -975,5 +3986,33 @@ maybeShowWelcome();
 </div>
 </div>
 <div id="toastContainer" class="toast-container"></div>
+
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <h2 id="authTitle">VTuber Analytics ログイン</h2>
+    <p id="authDescription">分析データを保護するため、ログインしてください。</p>
+    <div id="authDisplayNameField" class="auth-field" hidden>
+      <label for="authDisplayName">表示名</label>
+      <input id="authDisplayName" autocomplete="name" placeholder="愛野まりあ">
+    </div>
+    <div class="auth-field">
+      <label for="authUsername">ユーザー名</label>
+      <input id="authUsername" autocomplete="username" placeholder="aino_maria">
+    </div>
+    <div class="auth-field">
+      <label for="authPassword">パスワード</label>
+      <input id="authPassword" type="password" autocomplete="current-password" placeholder="10文字以上">
+    </div>
+    <div id="authConfirmField" class="auth-field" hidden>
+      <label for="authPasswordConfirm">パスワード確認</label>
+      <input id="authPasswordConfirm" type="password" autocomplete="new-password">
+    </div>
+    <div id="authError" class="auth-error"></div>
+    <div class="auth-actions">
+      <button id="authSubmitButton" type="button" class="primary-button" onclick="submitAuth()">ログイン</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

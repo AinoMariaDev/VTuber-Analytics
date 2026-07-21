@@ -6,13 +6,10 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Iterator
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
+from storage_paths import CONFIG_PATH as APP_CONFIG_PATH, CHAT_DIR as DEFAULT_CHAT_DIR, DATA_DIR, DB_PATH, PROJECT_DIR, REPORT_DIR
+
 PARENT_DIR = PROJECT_DIR.parent
-DATA_DIR = PROJECT_DIR / "data"
-REPORT_DIR = PROJECT_DIR / "reports"
-DB_PATH = DATA_DIR / "vtuber_analytics.db"
 CONFIG_PATH = PROJECT_DIR / "config.json"
-APP_CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
 
 def resolve_chat_dir() -> Path:
     candidates: list[Path] = []
@@ -27,7 +24,7 @@ def resolve_chat_dir() -> Path:
             pass
 
     candidates.extend([
-        PROJECT_DIR / "youtube_chat_data",
+        DEFAULT_CHAT_DIR,
         PARENT_DIR / "youtube_chat_data",
     ])
 

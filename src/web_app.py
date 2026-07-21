@@ -6,31 +6,521 @@ import json
 import re
 import sqlite3
 import urllib.parse
-from collections import defaultdict
+import mimetypes
+import os
+import subprocess
+import sys
+import threading
+import time
+from collections import defaultdict, deque
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_DIR / "data" / "vtuber_analytics.db"
+from weekly_schedule import load_week, save_week
+from deployment_bootstrap import bootstrap_persistent_storage
+from recovery_audit import (
+    cleanup_old_backups,
+    record_audit,
+    recovery_status,
+    save_recovery_config,
+    verify_all_backups,
+    verify_backup_by_name,
+)
+from background_jobs import BACKGROUND_JOB_MANAGER, load_config as load_background_config, save_config as save_background_config
+from youtube_sync import (
+    connection_status as youtube_connection_status,
+    create_authorization_url as youtube_authorization_url,
+    exchange_code as youtube_exchange_code,
+    save_settings as save_youtube_settings,
+    sync_live_streams,
+)
+from auth import (
+    authenticate,
+    clear_session_cookie,
+    create_initial_admin,
+    create_session,
+    current_user,
+    destroy_session,
+    role_at_least,
+    session_cookie,
+    setup_required,
+)
+from full_backup import create_backup, list_backups, restore_backup
+from storage_paths import BACKUP_DIR, CHAT_DIR, CONFIG_PATH as APP_CONFIG_PATH, DB_PATH, LOG_DIR, MODERATION_RULES_PATH, PROJECT_DIR, WEEKLY_SCHEDULE_DIR, ensure_storage_directories, storage_summary
+from stream_metadata import (
+    category_analysis,
+    ensure_stream_metadata_schema,
+    metadata_status,
+    reclassify_all_streams,
+    stream_tag_map,
+)
+
 INDEX_PATH = PROJECT_DIR / "web" / "index.html"
-HOST = "127.0.0.1"
+HOST = "0.0.0.0"
 PORT = 8765
 
-APP_CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
+WEB_ERROR_HISTORY: deque[dict[str, str]] = deque(maxlen=20)
+WEB_ERROR_LOCK = threading.Lock()
+
+
+def record_web_error(path: str, exc: Exception) -> None:
+    with WEB_ERROR_LOCK:
+        WEB_ERROR_HISTORY.appendleft({
+            "occurred_at": datetime.now().isoformat(timespec="seconds"),
+            "path": path,
+            "type": type(exc).__name__,
+            "message": str(exc),
+        })
+
+
+def readable_size(size_bytes: int) -> str:
+    value = float(max(0, size_bytes))
+    for unit in ("B", "KB", "MB", "GB"):
+        if value < 1024 or unit == "GB":
+            return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} GB"
+
+
+def command_version(command: list[str]) -> dict[str, Any]:
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=8,
+            cwd=str(PROJECT_DIR),
+        )
+        output = (result.stdout or result.stderr or "").strip().splitlines()
+        return {
+            "available": result.returncode == 0,
+            "version": output[0] if output else "",
+            "error": "" if result.returncode == 0 else f"終了コード {result.returncode}",
+        }
+    except FileNotFoundError:
+        return {"available": False, "version": "", "error": "見つかりません"}
+    except subprocess.TimeoutExpired:
+        return {"available": False, "version": "", "error": "確認がタイムアウトしました"}
+    except OSError as exc:
+        return {"available": False, "version": "", "error": str(exc)}
+
+
+def database_diagnostics() -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "exists": DB_PATH.exists(),
+        "path": str(DB_PATH),
+        "size_bytes": DB_PATH.stat().st_size if DB_PATH.exists() else 0,
+        "size_text": readable_size(DB_PATH.stat().st_size) if DB_PATH.exists() else "0 B",
+        "integrity": "未確認",
+        "stream_count": 0,
+        "listener_count": 0,
+        "error": "",
+    }
+    if not DB_PATH.exists():
+        result["integrity"] = "DBがありません"
+        return result
+
+    try:
+        connection = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True, timeout=5)
+        try:
+            integrity_row = connection.execute("PRAGMA quick_check").fetchone()
+            result["integrity"] = str(integrity_row[0] if integrity_row else "不明")
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            if "streams" in tables:
+                result["stream_count"] = int(
+                    connection.execute("SELECT COUNT(*) FROM streams").fetchone()[0]
+                )
+            if "listeners" in tables:
+                result["listener_count"] = int(
+                    connection.execute("SELECT COUNT(*) FROM listeners").fetchone()[0]
+                )
+            elif "listener_summary" in tables:
+                result["listener_count"] = int(
+                    connection.execute(
+                        "SELECT COUNT(*) FROM listener_summary"
+                    ).fetchone()[0]
+                )
+        finally:
+            connection.close()
+    except (sqlite3.Error, OSError) as exc:
+        result["integrity"] = "エラー"
+        result["error"] = str(exc)
+    return result
+
+
+def get_diagnostics() -> dict[str, Any]:
+    config = load_app_config()
+    chat_dir = Path(str(config.get("chat_data_dir", CHAT_DIR)))
+    log_candidates = [
+        PROJECT_DIR / "logs",
+        LOG_DIR,
+        PROJECT_DIR / "web_app.log",
+    ]
+    existing_logs = [
+        str(path) for path in log_candidates if path.exists()
+    ]
+
+    with WEB_ERROR_LOCK:
+        errors = list(WEB_ERROR_HISTORY)
+
+    return {
+        "checked_at": datetime.now().isoformat(timespec="seconds"),
+        "application": {
+            "project_dir": str(PROJECT_DIR),
+            "index_exists": INDEX_PATH.exists(),
+            "config_exists": APP_CONFIG_PATH.exists(),
+            "moderation_rules_exists": (PROJECT_DIR / "moderation_rules.local.json").exists(),
+        },
+        "database": database_diagnostics(),
+        "runtime": {
+            "python": {
+                "available": True,
+                "version": sys.version.split()[0],
+                "executable": sys.executable,
+            },
+            "yt_dlp": command_version([sys.executable, "-m", "yt_dlp", "--version"]),
+        },
+        "storage": {
+            "chat_data_dir": str(chat_dir),
+            "chat_data_dir_exists": chat_dir.exists(),
+            "chat_json_count": (
+                len(list(chat_dir.glob("*.json"))) if chat_dir.exists() else 0
+            ),
+            "weekly_schedule_dir": str(WEEKLY_SCHEDULE_DIR),
+            "weekly_schedule_dir_exists": (
+                WEEKLY_SCHEDULE_DIR
+            ).exists(),
+            "backup_dir": str(BACKUP_DIR),
+            "backup_dir_exists": (BACKUP_DIR).exists(),
+            "log_locations": existing_logs,
+        },
+        "chat_download": CHAT_DOWNLOAD_MANAGER.snapshot(),
+        "recent_errors": errors,
+        "storage_paths": storage_summary(),
+    }
+
 APP_CONFIG_EXAMPLE_PATH = PROJECT_DIR / "app_config.example.json"
 
 DEFAULT_APP_CONFIG = {
     "app_name": "VTuber Analytics",
     "powered_by": "Aino Maria",
-    "channel_name": "",
-"owner_channel_ids": ["YOUR_YOUTUBE_CHANNEL_ID"],
-    "chat_data_dir": str(PROJECT_DIR / "youtube_chat_data"),
+    "channel_name": "Aino Maria",
+    "owner_channel_ids": ["UCbPtcsXkPLLiOySGZJW92gw"],
+    "chat_data_dir": str(CHAT_DIR),
     "theme_color": "#24324A",
     "host": "127.0.0.1",
     "port": 8765
 }
+
+
+class ChatDownloadManager:
+    """Web画面から実行するyt-dlpチャット取得の進捗を管理する。"""
+
+    ITEM_PREFIX = "__VTA_ITEM__"
+    DONE_PREFIX = "__VTA_DONE__"
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._process: subprocess.Popen[str] | None = None
+        self._thread: threading.Thread | None = None
+        self._state: dict[str, Any] = self._empty_state()
+
+    @staticmethod
+    def _empty_state() -> dict[str, Any]:
+        return {
+            "running": False,
+            "status": "idle",
+            "message": "待機中",
+            "url": "",
+            "total": 0,
+            "current": 0,
+            "success": 0,
+            "failed": 0,
+            "current_title": "",
+            "current_video_id": "",
+            "started_at": "",
+            "finished_at": "",
+            "elapsed_seconds": 0,
+            "errors": [],
+            "log_tail": [],
+            "cancel_requested": False,
+            "return_code": None,
+        }
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            value = dict(self._state)
+            if value["running"] and value["started_at"]:
+                try:
+                    started = datetime.fromisoformat(value["started_at"])
+                    value["elapsed_seconds"] = max(
+                        0, int((datetime.now() - started).total_seconds())
+                    )
+                except ValueError:
+                    pass
+            value["errors"] = list(value["errors"])
+            value["log_tail"] = list(value["log_tail"])
+            return value
+
+    @staticmethod
+    def validate_url(url: str) -> tuple[bool, str]:
+        value = url.strip()
+        if not value:
+            return False, "YouTubeのライブ一覧URLを入力してください。"
+        lowered = value.lower()
+        if "studio.youtube.com" in lowered:
+            return False, "YouTube Studioではなく、公開チャンネルのライブタブURLを入力してください。"
+        parsed = urllib.parse.urlparse(value)
+        if parsed.scheme not in {"http", "https"}:
+            return False, "http または https から始まるURLを入力してください。"
+        hostname = (parsed.hostname or "").lower()
+        if hostname not in {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}:
+            return False, "YouTubeのURLを入力してください。"
+        return True, ""
+
+    def start(self, url: str) -> dict[str, Any]:
+        valid, message = self.validate_url(url)
+        if not valid:
+            raise ValueError(message)
+
+        with self._lock:
+            if self._state["running"]:
+                raise RuntimeError("チャット取得はすでに実行中です。")
+            self._state = self._empty_state()
+            self._state.update({
+                "running": True,
+                "status": "starting",
+                "message": "yt-dlpを起動しています...",
+                "url": url.strip(),
+                "started_at": datetime.now().isoformat(timespec="seconds"),
+            })
+            self._thread = threading.Thread(
+                target=self._run,
+                args=(url.strip(),),
+                daemon=True,
+                name="vta-chat-download",
+            )
+            self._thread.start()
+
+        return self.snapshot()
+
+    def cancel(self) -> dict[str, Any]:
+        with self._lock:
+            if not self._state["running"]:
+                return self.snapshot()
+            self._state["cancel_requested"] = True
+            self._state["status"] = "cancelling"
+            self._state["message"] = "取得処理を中止しています..."
+            process = self._process
+
+        if process and process.poll() is None:
+            try:
+                process.terminate()
+            except OSError:
+                pass
+        return self.snapshot()
+
+    def _append_log(self, line: str) -> None:
+        clean = self._safe_log_line(line)
+        if not clean:
+            return
+        with self._lock:
+            tail = self._state["log_tail"]
+            tail.append(clean)
+            del tail[:-30]
+
+    def _append_error(self, line: str) -> None:
+        clean = self._safe_log_line(line)
+        with self._lock:
+            errors = self._state["errors"]
+            if clean and clean not in errors:
+                errors.append(clean)
+                del errors[:-20]
+
+    @staticmethod
+    def _title_from_video_id(video_id: str) -> str:
+        if not video_id:
+            return "配信情報を確認中"
+        try:
+            with sqlite3.connect(DB_PATH) as connection:
+                row = connection.execute(
+                    "SELECT title FROM streams WHERE video_id = ? LIMIT 1",
+                    (video_id,),
+                ).fetchone()
+            if row and row[0]:
+                return str(row[0])
+        except sqlite3.Error:
+            pass
+        return f"動画ID: {video_id}"
+
+    @staticmethod
+    def _safe_log_line(value: str) -> str:
+        """壊れた日本語や制御文字をログから除外する。"""
+        text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", str(value))
+        text = "".join(
+            char for char in text
+            if char in "\t " or 32 <= ord(char) <= 126
+        ).strip()
+        return text
+
+    def _update_item(self, payload: str) -> None:
+        parts = payload.split("|", 2)
+        while len(parts) < 3:
+            parts.append("")
+        index_text, total_text, video_id = parts
+        try:
+            index = int(index_text or 0)
+        except ValueError:
+            index = 0
+        try:
+            total = int(total_text or 0)
+        except ValueError:
+            total = 0
+
+        with self._lock:
+            if total > 0:
+                self._state["total"] = max(self._state["total"], total)
+            if index > 0:
+                self._state["current"] = max(self._state["current"], index)
+            self._state["current_video_id"] = video_id
+            self._state["current_title"] = self._title_from_video_id(video_id)
+            self._state["status"] = "running"
+            if self._state["total"]:
+                self._state["message"] = (
+                    f'{self._state["current"]}/{self._state["total"]}件目を取得中'
+                )
+            else:
+                self._state["message"] = "ライブチャットを取得中"
+
+    def _mark_done(self, payload: str) -> None:
+        parts = payload.split("|", 2)
+        while len(parts) < 3:
+            parts.append("")
+        index_text, total_text, video_id = parts
+        try:
+            index = int(index_text or 0)
+        except ValueError:
+            index = 0
+        try:
+            total = int(total_text or 0)
+        except ValueError:
+            total = 0
+
+        with self._lock:
+            if total > 0:
+                self._state["total"] = max(self._state["total"], total)
+            if index > 0:
+                self._state["current"] = max(self._state["current"], index)
+            self._state["success"] += 1
+            self._state["current_video_id"] = video_id
+            self._state["current_title"] = self._title_from_video_id(video_id)
+            if self._state["total"]:
+                self._state["message"] = (
+                    f'{self._state["success"]}/{self._state["total"]}件を処理しました'
+                )
+
+    def _run(self, url: str) -> None:
+        config = load_app_config()
+        out_dir = Path(
+            str(config.get("chat_data_dir", CHAT_DIR))
+        ).expanduser()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        output_template = str(
+            out_dir / "%(upload_date>%Y-%m-%d)s_%(id)s_%(title).120B.%(ext)s"
+        )
+
+        cmd = [
+            sys.executable,
+            "-m",
+            "yt_dlp",
+            "--skip-download",
+            "--write-subs",
+            "--sub-langs",
+            "live_chat",
+            "--ignore-errors",
+            "--no-overwrites",
+            "--windows-filenames",
+            "--newline",
+            "--no-color",
+            "--print",
+            f"video:{self.ITEM_PREFIX}%(playlist_index|0)s|%(playlist_count|0)s|%(id)s",
+            "--print",
+            f"after_video:{self.DONE_PREFIX}%(playlist_index|0)s|%(playlist_count|0)s|%(id)s",
+            "--output",
+            output_template,
+            url,
+        ]
+
+        return_code = -1
+        try:
+            process = subprocess.Popen(
+                cmd,
+                cwd=str(PROJECT_DIR),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+            )
+            with self._lock:
+                self._process = process
+                self._state["status"] = "running"
+                self._state["message"] = "YouTubeの配信一覧を確認しています..."
+
+            assert process.stdout is not None
+            for raw_line in process.stdout:
+                line = raw_line.rstrip("\r\n")
+                self._append_log(line)
+
+                if line.startswith(self.ITEM_PREFIX):
+                    self._update_item(line[len(self.ITEM_PREFIX):])
+                elif line.startswith(self.DONE_PREFIX):
+                    self._mark_done(line[len(self.DONE_PREFIX):])
+                elif "ERROR:" in line:
+                    self._append_error(line)
+                    with self._lock:
+                        self._state["failed"] += 1
+
+            return_code = process.wait()
+        except Exception as exc:
+            self._append_error(str(exc))
+            with self._lock:
+                self._state["failed"] += 1
+        finally:
+            with self._lock:
+                cancelled = bool(self._state["cancel_requested"])
+                self._process = None
+                self._state["running"] = False
+                self._state["return_code"] = return_code
+                self._state["finished_at"] = datetime.now().isoformat(timespec="seconds")
+                try:
+                    started = datetime.fromisoformat(self._state["started_at"])
+                    self._state["elapsed_seconds"] = max(
+                        0, int((datetime.now() - started).total_seconds())
+                    )
+                except (ValueError, TypeError):
+                    pass
+
+                if cancelled:
+                    self._state["status"] = "cancelled"
+                    self._state["message"] = "チャット取得を中止しました。"
+                elif return_code == 0:
+                    self._state["status"] = "completed"
+                    self._state["message"] = "チャット取得が完了しました。"
+                else:
+                    self._state["status"] = "failed"
+                    self._state["message"] = "一部または全部のチャット取得に失敗しました。"
+
+
+CHAT_DOWNLOAD_MANAGER = ChatDownloadManager()
 
 def load_app_config() -> dict[str, Any]:
     if not APP_CONFIG_PATH.exists():
@@ -56,7 +546,6 @@ def configured_owner_channel_ids() -> set[str]:
 OWNER_CHANNEL_IDS = configured_owner_channel_ids()
 
 
-MODERATION_RULES_PATH = PROJECT_DIR / "moderation_rules.local.json"
 MODERATION_RULES_EXAMPLE_PATH = PROJECT_DIR / "moderation_rules.example.json"
 
 DEFAULT_MODERATION_RULES = {
@@ -351,39 +840,7 @@ def get_summary() -> dict[str, Any]:
     }
 
 def get_categories() -> list[dict[str, Any]]:
-    owner_ph = placeholders(OWNER_CHANNEL_IDS)
-    owner_params = tuple(OWNER_CHANNEL_IDS)
-
-    with connect() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT
-                CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END AS category,
-                COUNT(DISTINCT s.video_id) AS stream_count,
-                ROUND(AVG(x.participants), 1) AS avg_participants,
-                ROUND(AVG(x.comments), 1) AS avg_comments,
-                MAX(x.participants) AS max_participants,
-                MAX(x.comments) AS max_comments
-            FROM streams s
-            LEFT JOIN (
-                SELECT
-                    video_id,
-                    COUNT(DISTINCT CASE
-                        WHEN channel_id NOT IN ({owner_ph}) THEN channel_id
-                    END) AS participants,
-                    COUNT(CASE
-                        WHEN channel_id NOT IN ({owner_ph}) THEN message_id
-                    END) AS comments
-                FROM messages
-                GROUP BY video_id
-            ) x ON x.video_id = s.video_id
-            GROUP BY CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END
-            ORDER BY avg_participants DESC, avg_comments DESC
-            """,
-            owner_params * 2,
-        ).fetchall()
-
-    return [dict(r) for r in rows]
+    return category_analysis(OWNER_CHANNEL_IDS)
 
 def get_weekdays() -> list[dict[str, Any]]:
     owner_ph = placeholders(OWNER_CHANNEL_IDS)
@@ -423,22 +880,16 @@ def get_weekdays() -> list[dict[str, Any]]:
 def get_recent_streams(limit: int = 30) -> list[dict[str, Any]]:
     owner_ph = placeholders(OWNER_CHANNEL_IDS)
     owner_params = tuple(OWNER_CHANNEL_IDS)
-
     with connect() as conn:
         rows = conn.execute(
             f"""
-            SELECT
-                s.stream_date,
-                s.video_id,
-                s.title,
-                CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END AS category,
-                COALESCE(s.weekday, '') AS weekday,
-                COUNT(DISTINCT CASE
-                    WHEN m.channel_id NOT IN ({owner_ph}) THEN m.channel_id
-                END) AS participants,
-                COUNT(CASE
-                    WHEN m.channel_id NOT IN ({owner_ph}) THEN m.message_id
-                END) AS comments
+            SELECT s.stream_date, s.video_id, s.title,
+                   COALESCE(s.category, 'その他') AS category,
+                   COALESCE(s.weekday, '') AS weekday,
+                   COALESCE(s.source_type, '不明') AS source_type,
+                   COALESCE(s.last_synced_at, s.imported_at) AS last_synced_at,
+                   COUNT(DISTINCT CASE WHEN m.channel_id NOT IN ({owner_ph}) THEN m.channel_id END) AS participants,
+                   COUNT(CASE WHEN m.channel_id NOT IN ({owner_ph}) THEN m.message_id END) AS comments
             FROM streams s
             LEFT JOIN messages m ON m.video_id = s.video_id
             GROUP BY s.video_id
@@ -447,9 +898,13 @@ def get_recent_streams(limit: int = 30) -> list[dict[str, Any]]:
             """,
             (*owner_params, *owner_params, limit),
         ).fetchall()
-
-    return [dict(r) for r in rows]
-
+    tag_map = stream_tag_map()
+    result = []
+    for row in rows:
+        item = dict(row)
+        item["tags"] = tag_map.get(str(row["video_id"]), [item["category"]])
+        result.append(item)
+    return result
 
 def grade_stream(
     participants: int,
@@ -678,7 +1133,7 @@ def get_stream(video_id: str) -> dict[str, Any] | None:
                 FROM messages
                 GROUP BY video_id
             ) x ON x.video_id = s.video_id
-            WHERE CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END = ?
+            WHERE COALESCE(s.category, 'その他') = ?
             """,
             (*owner_params, *owner_params, stream["category"]),
         ).fetchone()
@@ -886,7 +1341,7 @@ def get_listener(channel_id: str) -> dict[str, Any] | None:
                 s.stream_date,
                 s.video_id,
                 s.title,
-                CASE WHEN s.category IS NULL OR s.category = '' OR s.category = 'default_category' THEN 'その他' ELSE s.category END AS category,
+                COALESCE(s.category, 'その他') AS category,
                 COUNT(m.message_id) AS comment_count
             FROM streams s
             JOIN messages m ON m.video_id = s.video_id
@@ -1531,7 +1986,7 @@ def get_app_info() -> dict[str, Any]:
     )
 
     return {
-       print("VTuber Analytics Web App v1.0.0")
+        "version": "1.0.0",
         "app_name": config.get("app_name", "VTuber Analytics"),
         "powered_by": config.get("powered_by", "Aino Maria"),
         "channel_name": config.get("channel_name", "Aino Maria"),
@@ -1552,7 +2007,7 @@ def public_app_config() -> dict[str, Any]:
         "owner_channel_ids": list(config.get("owner_channel_ids", [])),
         "chat_data_dir": str(config.get(
             "chat_data_dir",
-            PROJECT_DIR / "youtube_chat_data",
+            CHAT_DIR,
         )),
         "theme_color": str(config.get("theme_color", "#24324A")),
         "host": str(config.get("host", "127.0.0.1")),
@@ -1568,7 +2023,7 @@ def save_app_config(payload: dict[str, Any]) -> dict[str, Any]:
     chat_data_dir = str(
         payload.get(
             "chat_data_dir",
-            current.get("chat_data_dir", PROJECT_DIR / "youtube_chat_data"),
+            current.get("chat_data_dir", CHAT_DIR),
         )
     ).strip()
     theme_color = str(
@@ -1614,6 +2069,53 @@ def save_app_config(payload: dict[str, Any]) -> dict[str, Any]:
     return {"ok": True, "config": public_app_config()}
 
 class Handler(BaseHTTPRequestHandler):
+    def auth_user(self):
+        return current_user(self.headers.get("Cookie"))
+
+    def send_json_with_cookie(
+        self,
+        value: Any,
+        cookie_value: str,
+        status: int = 200,
+    ) -> None:
+        body = json_bytes(value)
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Set-Cookie", cookie_value)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def require_login(self):
+        user = self.auth_user()
+        if user is None:
+            self.send_json(
+                {
+                    "error": "login required",
+                    "code": "AUTH_REQUIRED",
+                    "setup_required": setup_required(),
+                },
+                401,
+            )
+            return None
+        return user
+
+    def require_role(self, required_role: str):
+        user = self.require_login()
+        if user is None:
+            return None
+        if not role_at_least(user, required_role):
+            self.send_json(
+                {
+                    "error": "この操作を行う権限がありません。",
+                    "code": "FORBIDDEN",
+                    "required_role": required_role,
+                },
+                403,
+            )
+            return None
+        return user
     def send_json(self, value: Any, status: int = 200) -> None:
         body = json_bytes(value)
         self.send_response(status)
@@ -1622,6 +2124,24 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
+
+    def send_file(self, path: Path, filename: str) -> None:
+        size = path.stat().st_size
+        self.send_response(200)
+        self.send_header("Content-Type", "application/zip")
+        self.send_header(
+            "Content-Disposition",
+            f'attachment; filename="{filename}"'
+        )
+        self.send_header("Content-Length", str(size))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        with path.open("rb") as source:
+            while True:
+                chunk = source.read(1024 * 1024)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
 
     def send_csv(self, body: bytes, filename: str) -> None:
         self.send_response(200)
@@ -1640,6 +2160,15 @@ class Handler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length) if length else b"{}"
         return json.loads(raw.decode("utf-8"))
 
+    def send_html_text(self, html_text: str, status: int = 200) -> None:
+        body = html_text.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
     def send_html(self) -> None:
         body = INDEX_PATH.read_bytes()
         self.send_response(200)
@@ -1651,20 +2180,140 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
+        path = parsed.path.rstrip("/") or "/"
         params = urllib.parse.parse_qs(parsed.query)
+
+        public_get_paths = {
+            "/api/auth/status",
+            "/api/auth/setup-check",
+            "/api/youtube/oauth/callback",
+            "/health",
+            "/api/health",
+        }
+        if (
+            path.startswith("/api/")
+            and path not in public_get_paths
+            and self.auth_user() is None
+        ):
+            self.send_json(
+                {
+                    "error": "login required",
+                    "code": "AUTH_REQUIRED",
+                    "setup_required": setup_required(),
+                },
+                401,
+            )
+            return
 
         try:
             if path == "/":
                 self.send_html()
+            elif path in {"/health", "/api/health"}:
+                database_ok = DB_PATH.exists()
+                self.send_json({
+                    "ok": database_ok,
+                    "service": "VTuber Analytics",
+                    "version": "1.0.0",
+                    "database": database_ok,
+                    "background_jobs": BACKGROUND_JOB_MANAGER.state().get("thread_alive", False),
+                }, 200 if database_ok else 503)
+            elif path == "/api/auth/setup-check":
+                self.send_json({
+                    "ok": True,
+                    "setup_required": setup_required(),
+                    "setup_endpoint": "/api/auth/setup",
+                })
+            elif path == "/api/auth/status":
+                user = self.auth_user()
+                self.send_json({
+                    "authenticated": user is not None,
+                    "setup_required": setup_required(),
+                    "user": user.public() if user else None,
+                    "session_ttl_seconds": 28800,
+                })
             elif path == "/api/app-info":
+                if self.require_login() is None:
+                    return
                 self.send_json(get_app_info())
+            elif path == "/api/youtube/status":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json(youtube_connection_status())
+            elif path == "/api/background-jobs/status":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json(BACKGROUND_JOB_MANAGER.state())
+            elif path == "/api/recovery/status":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json(recovery_status())
+            elif path == "/api/recovery/verify":
+                if self.require_role("admin") is None:
+                    return
+                filename = params.get("filename", [""])[0]
+                self.send_json(verify_backup_by_name(filename))
+            elif path == "/api/recovery/verify-all":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json({"items": verify_all_backups(50)})
+            elif path == "/api/youtube/oauth/start":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json({"authorization_url": youtube_authorization_url()})
+            elif path == "/api/youtube/oauth/callback":
+                error = params.get("error", [""])[0]
+                if error:
+                    self.send_html_text(
+                        "<!doctype html><meta charset='utf-8'><title>YouTube連携エラー</title>"
+                        "<h1>YouTube連携を完了できませんでした。</h1>"
+                        f"<p>{error}</p><a href='/'>アプリへ戻る</a>",
+                        400,
+                    )
+                    return
+                channel = youtube_exchange_code(
+                    params.get("code", [""])[0],
+                    params.get("state", [""])[0],
+                )
+                self.send_html_text(
+                    "<!doctype html><meta charset='utf-8'><title>YouTube連携完了</title>"
+                    "<script>location.replace('/?youtube=connected');</script>"
+                    f"<p>{channel.get('title', '')}との連携が完了しました。</p>"
+                )
             elif path == "/api/settings":
+                if self.require_role("admin") is None:
+                    return
+                if self.require_role("admin") is None:
+                    return
                 self.send_json(public_app_config())
+            elif path == "/api/chat-download/status":
+                if self.require_login() is None:
+                    return
+                self.send_json(CHAT_DOWNLOAD_MANAGER.snapshot())
+            elif path == "/api/diagnostics":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json(get_diagnostics())
             elif path == "/api/summary":
+                if self.require_login() is None:
+                    return
                 self.send_json(get_summary())
+            elif path == "/api/backups":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json({"backups": list_backups()})
+            elif path == "/api/backup/download":
+                if self.require_role("admin") is None:
+                    return
+                include_chat = params.get("include_chat", ["1"])[0] != "0"
+                backup = create_backup(include_chat_data=include_chat)
+                self.send_file(backup["path"], backup["filename"])
+            elif path == "/api/weekly-schedule":
+                week_start = params.get("week_start", [""])[0]
+                self.send_json(load_week(week_start or None))
             elif path == "/api/categories":
                 self.send_json(get_categories())
+            elif path == "/api/stream-metadata/status":
+                self.send_json(metadata_status())
             elif path == "/api/weekdays":
                 self.send_json(get_weekdays())
             elif path == "/api/community":
@@ -1711,13 +2360,90 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"error": "not found"}, 404)
         except Exception as exc:
+            record_web_error(path, exc)
             self.send_json({"error": str(exc)}, 500)
+
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self.send_header("Allow", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def do_POST(self) -> None:
         parsed = urllib.parse.urlparse(self.path)
-        path = parsed.path
+        path = parsed.path.rstrip("/") or "/"
+
+        public_auth_paths = {
+            "/api/auth/setup",
+            "/api/auth/initial-admin",
+            "/api/setup",
+            "/api/auth/login",
+            "/api/auth/logout",
+        }
+        if path.startswith("/api/") and path not in public_auth_paths:
+            if self.auth_user() is None:
+                self.send_json(
+                    {
+                        "error": "login required",
+                        "code": "AUTH_REQUIRED",
+                        "setup_required": setup_required(),
+                    },
+                    401,
+                )
+                return
+
         try:
-            if path == "/api/moderation/review":
+            if path in {
+                "/api/auth/setup",
+                "/api/auth/initial-admin",
+                "/api/setup",
+            }:
+                payload = self.read_json_body()
+                user = create_initial_admin(
+                    username=str(payload.get("username", "")),
+                    display_name=str(payload.get("display_name", "")),
+                    password=str(payload.get("password", "")),
+                )
+                auth_user = authenticate(
+                    str(payload.get("username", "")),
+                    str(payload.get("password", "")),
+                )
+                if auth_user is None:
+                    raise ValueError("管理者作成後の認証に失敗しました。")
+                token = create_session(auth_user)
+                self.send_json_with_cookie(
+                    {"ok": True, "user": user},
+                    session_cookie(token),
+                    201,
+                )
+            elif path == "/api/auth/login":
+                payload = self.read_json_body()
+                user = authenticate(
+                    str(payload.get("username", "")),
+                    str(payload.get("password", "")),
+                )
+                if user is None:
+                    self.send_json(
+                        {"error": "ユーザー名またはパスワードが違います。"},
+                        401,
+                    )
+                    return
+                token = create_session(user)
+                self.send_json_with_cookie(
+                    {"ok": True, "user": user.public()},
+                    session_cookie(token),
+                )
+            elif path == "/api/auth/logout":
+                destroy_session(self.headers.get("Cookie"))
+                self.send_json_with_cookie(
+                    {"ok": True},
+                    clear_session_cookie(),
+                )
+            elif path == "/api/moderation/review":
+                if self.require_role("moderator") is None:
+                    return
                 payload = self.read_json_body()
                 result = save_moderation_review(
                     message_id=str(payload.get("message_id", "")),
@@ -1729,29 +2455,148 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/settings":
                 payload = self.read_json_body()
                 self.send_json(save_app_config(payload))
+            elif path == "/api/youtube/settings":
+                if self.require_role("admin") is None:
+                    return
+                payload = self.read_json_body()
+                self.send_json(save_youtube_settings(
+                    client_id=str(payload.get("client_id", "")),
+                    client_secret=str(payload.get("client_secret", "")),
+                    redirect_uri=str(payload.get("redirect_uri", "")),
+                ))
+            elif path == "/api/youtube/sync":
+                if self.require_role("admin") is None:
+                    return
+                payload = self.read_json_body()
+                result = sync_live_streams(
+                    max_pages=int(payload.get("max_pages", 20))
+                )
+                record_audit(
+                    "youtube_sync_manual",
+                    status="success",
+                    actor=self.auth_user().username,
+                    role=self.auth_user().role,
+                    details=result,
+                )
+                self.send_json(result)
+            elif path == "/api/background-jobs/settings":
+                if self.require_role("admin") is None:
+                    return
+                payload = self.read_json_body()
+                saved = save_background_config(payload)
+                BACKGROUND_JOB_MANAGER.wake()
+                self.send_json(saved)
+            elif path == "/api/background-jobs/run":
+                if self.require_role("admin") is None:
+                    return
+                payload = self.read_json_body()
+                self.send_json(
+                    BACKGROUND_JOB_MANAGER.run_now(
+                        str(payload.get("job", ""))
+                    ),
+                    202,
+                )
+            elif path == "/api/recovery/settings":
+                user = self.require_role("admin")
+                if user is None:
+                    return
+                payload = self.read_json_body()
+                saved = save_recovery_config(payload)
+                record_audit(
+                    "recovery_settings",
+                    status="success",
+                    actor=user.username,
+                    role=user.role,
+                    details=saved,
+                )
+                self.send_json(saved)
+            elif path == "/api/recovery/cleanup":
+                user = self.require_role("admin")
+                if user is None:
+                    return
+                result = cleanup_old_backups()
+                record_audit(
+                    "backup_cleanup",
+                    status="success",
+                    actor=user.username,
+                    role=user.role,
+                    details=result,
+                )
+                self.send_json(result)
+            elif path == "/api/chat-download/start":
+                if self.require_role("admin") is None:
+                    return
+                payload = self.read_json_body()
+                self.send_json(
+                    CHAT_DOWNLOAD_MANAGER.start(str(payload.get("url", ""))),
+                    202,
+                )
+            elif path == "/api/chat-download/cancel":
+                if self.require_role("admin") is None:
+                    return
+                self.send_json(CHAT_DOWNLOAD_MANAGER.cancel())
+            elif path == "/api/stream-metadata/reclassify":
+                if self.require_role("admin") is None:
+                    return
+                payload = self.read_json_body()
+                result = reclassify_all_streams(
+                    recompute_weekday=bool(payload.get("recompute_weekday", True))
+                )
+                record_audit(
+                    "reclassify_manual",
+                    status="success",
+                    actor=self.auth_user().username,
+                    role=self.auth_user().role,
+                    details=result,
+                )
+                self.send_json(result)
+            elif path == "/api/backup/restore":
+                if self.require_role("admin") is None:
+                    return
+                content_length = int(self.headers.get("Content-Length", "0"))
+                self.send_json(restore_backup(self.rfile, content_length))
+            elif path == "/api/weekly-schedule":
+                if self.require_role("moderator") is None:
+                    return
+                payload = self.read_json_body()
+                self.send_json(save_week(payload))
             else:
-                self.send_json({"error": "not found"}, 404)
+                self.send_json({
+                    "error": "API endpoint not found",
+                    "code": "API_NOT_FOUND",
+                    "path": path,
+                    "method": "POST",
+                }, 404)
         except Exception as exc:
+            record_web_error(path, exc)
             self.send_json({"error": str(exc)}, 400)
 
     def log_message(self, fmt: str, *args: Any) -> None:
         print(f"[Web] {self.address_string()} - {fmt % args}")
 
 def main() -> None:
-    if not DB_PATH.exists():
-        raise SystemExit(f"Database not found: {DB_PATH}")
     if not INDEX_PATH.exists():
         raise SystemExit(f"index.html not found: {INDEX_PATH}")
 
+    bootstrap_result = bootstrap_persistent_storage()
+    print(f"[Bootstrap] {bootstrap_result}")
+
+    if not DB_PATH.exists():
+        raise SystemExit(f"Database not found: {DB_PATH}")
+
+    ensure_storage_directories()
     ensure_moderation_storage()
+    ensure_stream_metadata_schema()
+    BACKGROUND_JOB_MANAGER.start()
 
     config = load_app_config()
-    host = str(config.get("host", HOST))
-    port = int(config.get("port", PORT))
+    server_mode = os.environ.get("VTA_SERVER_MODE") == "1"
+    host = os.environ.get("HOST", "0.0.0.0" if server_mode else str(config.get("host", HOST)))
+    port = int(os.environ.get("PORT", str(config.get("port", PORT))))
 
     server = ThreadingHTTPServer((host, port), Handler)
     print("VTuber Analytics Web App v1.0.0")
-    print(f"Open: http://{host}:{port}")
+    print(f"Listening: http://{host}:{port}")
     print("Press Ctrl+C to stop.")
 
     try:
@@ -1759,6 +2604,7 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\nStopping...")
     finally:
+        BACKGROUND_JOB_MANAGER.stop()
         server.server_close()
 
 if __name__ == "__main__":

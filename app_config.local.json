@@ -1,0 +1,12 @@
+{
+  "app_name": "VTuber Analytics",
+  "powered_by": "Aino Maria",
+  "channel_name": "愛野まりあ",
+  "owner_channel_ids": [
+    "UCbPtcsXkPLLiOySGZJW92gw"
+  ],
+  "chat_data_dir": "C:\\Users\\yuki0\\Downloads\\VTuber-Analytics-v1.0.1-Windows\\youtube_chat_data",
+  "theme_color": "#24324A",
+  "host": "0.0.0.0",
+  "port": 8765
+}

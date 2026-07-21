@@ -5,10 +5,9 @@ import sqlite3
 import sys
 from pathlib import Path
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_DIR / "data" / "vtuber_analytics.db"
+from storage_paths import CONFIG_PATH, DB_PATH, PROJECT_DIR
+
 WEB_PATH = PROJECT_DIR / "web" / "index.html"
-CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
 
 def main() -> None:
     errors = []

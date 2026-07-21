@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = PROJECT_DIR / "app_config.local.json"
+from storage_paths import CHAT_DIR, CONFIG_PATH, PROJECT_DIR
+
 
 
 def load_chat_dir() -> Path:
@@ -19,7 +19,7 @@ def load_chat_dir() -> Path:
                 return Path(value).expanduser()
         except Exception:
             pass
-    return PROJECT_DIR / "youtube_chat_data"
+    return CHAT_DIR
 
 
 def validate_url(url: str) -> tuple[bool, str]:
