@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any, BinaryIO
 
+from time_utils import now_jst
+
 from storage_paths import BACKUP_DIR, DB_PATH, PROJECT_DIR
 
 
@@ -28,7 +30,7 @@ ALLOWED_RESTORE_PREFIXES = tuple(FILE_TARGETS + DIRECTORY_TARGETS + ["data/vtube
 
 
 def _stamp() -> str:
-    return datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return now_jst().strftime("%Y%m%d_%H%M%S_%f")
 
 
 def _safe_arcname(path: Path) -> str:
@@ -94,7 +96,7 @@ def create_backup(include_chat_data: bool = True, reason: str = "manual") -> dic
             manifest = {
                 "format": "vtuber-analytics-backup",
                 "format_version": 1,
-                "created_at": datetime.now().isoformat(timespec="seconds"),
+                "created_at": now_jst().isoformat(timespec="seconds"),
                 "reason": reason,
                 "include_chat_data": include_chat_data,
                 "entry_count": len(entries),

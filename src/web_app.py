@@ -18,6 +18,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from time_utils import now_jst
 from weekly_schedule import load_week, save_week
 from deployment_bootstrap import bootstrap_persistent_storage
 from recovery_audit import (
@@ -68,7 +69,7 @@ WEB_ERROR_LOCK = threading.Lock()
 def record_web_error(path: str, exc: Exception) -> None:
     with WEB_ERROR_LOCK:
         WEB_ERROR_HISTORY.appendleft({
-            "occurred_at": datetime.now().isoformat(timespec="seconds"),
+            "occurred_at": now_jst().isoformat(timespec="seconds"),
             "path": path,
             "type": type(exc).__name__,
             "message": str(exc),
@@ -171,7 +172,7 @@ def get_diagnostics() -> dict[str, Any]:
         errors = list(WEB_ERROR_HISTORY)
 
     return {
-        "checked_at": datetime.now().isoformat(timespec="seconds"),
+        "checked_at": now_jst().isoformat(timespec="seconds"),
         "application": {
             "project_dir": str(PROJECT_DIR),
             "index_exists": INDEX_PATH.exists(),
@@ -261,7 +262,7 @@ class ChatDownloadManager:
                 try:
                     started = datetime.fromisoformat(value["started_at"])
                     value["elapsed_seconds"] = max(
-                        0, int((datetime.now() - started).total_seconds())
+                        0, int((now_jst() - started).total_seconds())
                     )
                 except ValueError:
                     pass
@@ -299,7 +300,7 @@ class ChatDownloadManager:
                 "status": "starting",
                 "message": "yt-dlpを起動しています...",
                 "url": url.strip(),
-                "started_at": datetime.now().isoformat(timespec="seconds"),
+                "started_at": now_jst().isoformat(timespec="seconds"),
             })
             self._thread = threading.Thread(
                 target=self._run,
@@ -500,11 +501,11 @@ class ChatDownloadManager:
                 self._process = None
                 self._state["running"] = False
                 self._state["return_code"] = return_code
-                self._state["finished_at"] = datetime.now().isoformat(timespec="seconds")
+                self._state["finished_at"] = now_jst().isoformat(timespec="seconds")
                 try:
                     started = datetime.fromisoformat(self._state["started_at"])
                     self._state["elapsed_seconds"] = max(
-                        0, int((datetime.now() - started).total_seconds())
+                        0, int((now_jst() - started).total_seconds())
                     )
                 except (ValueError, TypeError):
                     pass

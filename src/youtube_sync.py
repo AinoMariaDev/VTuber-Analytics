@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from time_utils import now_jst
+
 from storage_paths import (
     DB_PATH,
     YOUTUBE_OAUTH_CONFIG_PATH,
@@ -80,7 +82,7 @@ def save_settings(
         "client_id": normalized_id,
         "client_secret": secret,
         "redirect_uri": normalized_redirect,
-        "updated_at": datetime.now().isoformat(timespec="seconds"),
+        "updated_at": now_jst().isoformat(timespec="seconds"),
     }
     _write_json(YOUTUBE_OAUTH_CONFIG_PATH, data)
     return public_settings()
@@ -166,7 +168,7 @@ def exchange_code(code: str, state: str) -> dict[str, Any]:
     channel = get_my_channel()
     token_store = _read_json(YOUTUBE_TOKEN_PATH, {})
     token_store["channel"] = channel
-    token_store["connected_at"] = datetime.now().isoformat(timespec="seconds")
+    token_store["connected_at"] = now_jst().isoformat(timespec="seconds")
     _write_json(YOUTUBE_TOKEN_PATH, token_store)
     return channel
 
@@ -339,7 +341,7 @@ def sync_live_streams(max_pages: int = 20) -> dict[str, Any]:
 
     inserted = 0
     updated = 0
-    now_text = datetime.now().isoformat(timespec="seconds")
+    now_text = now_jst().isoformat(timespec="seconds")
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     with sqlite3.connect(DB_PATH) as connection:

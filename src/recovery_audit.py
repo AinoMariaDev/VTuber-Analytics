@@ -9,6 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from time_utils import now_jst
+
 from storage_paths import (
     AUDIT_LOG_PATH,
     BACKUP_DIR,
@@ -71,7 +73,7 @@ def record_audit(
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     item = {
-        "occurred_at": datetime.now().isoformat(timespec="seconds"),
+        "occurred_at": now_jst().isoformat(timespec="seconds"),
         "action": action,
         "status": status,
         "actor": actor,
@@ -117,7 +119,7 @@ def verify_backup(path: Path) -> dict[str, Any]:
         "size_bytes": path.stat().st_size if path.exists() else 0,
         "sha256": "",
         "errors": [],
-        "verified_at": datetime.now().isoformat(timespec="seconds"),
+        "verified_at": now_jst().isoformat(timespec="seconds"),
     }
     if not path.exists():
         result["errors"].append("バックアップファイルがありません。")
@@ -277,5 +279,5 @@ def recovery_status() -> dict[str, Any]:
         "audit": recent_audit(50),
         "database_exists": DB_PATH.exists(),
         "database_size_bytes": DB_PATH.stat().st_size if DB_PATH.exists() else 0,
-        "checked_at": datetime.now().isoformat(timespec="seconds"),
+        "checked_at": now_jst().isoformat(timespec="seconds"),
     }

@@ -11,6 +11,7 @@ from typing import Any, Callable
 from full_backup import create_backup
 from storage_paths import BACKGROUND_JOBS_CONFIG_PATH, BACKGROUND_JOBS_HISTORY_PATH
 from stream_metadata import reclassify_all_streams
+from time_utils import now_jst
 from youtube_sync import connection_status, sync_live_streams
 from recovery_audit import record_audit
 
@@ -141,7 +142,7 @@ def _job_definition(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 def scheduler_status() -> dict[str, Any]:
     config = load_config()
-    now = datetime.now()
+    now = now_jst()
     jobs = []
     for definition in _job_definition(config):
         last = _last_success(definition["name"])
@@ -162,7 +163,7 @@ def scheduler_status() -> dict[str, Any]:
 
 
 def _run_job(job_name: str, reason: str) -> dict[str, Any]:
-    started = datetime.now()
+    started = now_jst()
     item: dict[str, Any] = {
         "job": job_name,
         "reason": reason,
@@ -192,15 +193,15 @@ def _run_job(job_name: str, reason: str) -> dict[str, Any]:
 
         item.update({
             "status": "success",
-            "finished_at": datetime.now().isoformat(timespec="seconds"),
-            "duration_seconds": round((datetime.now() - started).total_seconds(), 2),
+            "finished_at": now_jst().isoformat(timespec="seconds"),
+            "duration_seconds": round((now_jst() - started).total_seconds(), 2),
             "result": result,
         })
     except Exception as exc:
         item.update({
             "status": "error",
-            "finished_at": datetime.now().isoformat(timespec="seconds"),
-            "duration_seconds": round((datetime.now() - started).total_seconds(), 2),
+            "finished_at": now_jst().isoformat(timespec="seconds"),
+            "duration_seconds": round((now_jst() - started).total_seconds(), 2),
             "error": str(exc),
             "traceback": traceback.format_exc(limit=5),
         })
@@ -280,7 +281,7 @@ class BackgroundJobManager:
         while not self._stop_event.is_set():
             config = load_config()
             if bool(config.get("enabled", True)):
-                now = datetime.now()
+                now = now_jst()
                 for definition in _job_definition(config):
                     if not definition["enabled"]:
                         continue
